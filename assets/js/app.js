@@ -1,13 +1,5 @@
-// ==========================================
-// App Bootstrap + Filter UI Wiring
-// ==========================================
-
 import { loadAllData } from "./core/fetchData.js";
-import {
-  applyFilters,
-  setFilter,
-  setStyleSearch
-} from "./core/filters.js";
+import { applyFilters, setFilter, setStyleSearch } from "./core/filters.js";
 
 import { renderSummarySale } from "./summary/summarySale.js";
 import { renderSummaryStock } from "./summary/summaryStock.js";
@@ -16,125 +8,69 @@ import { renderSummarySize } from "./summary/summarySize.js";
 import { renderSummaryRemark } from "./summary/summaryRemark.js";
 import { renderSummaryCategory } from "./summary/summaryCategory.js";
 
-let RAW_DATA = null;
+let RAW_DATA;
 
-// -------------------------------
-// Render All Summaries
-// -------------------------------
-function renderAll(filteredData) {
-  renderSummarySale(filteredData);
-  renderSummaryStock(filteredData);
-  renderSummarySCBand(filteredData);
-  renderSummarySize(filteredData);
-  renderSummaryRemark(filteredData);
-  renderSummaryCategory(filteredData);
+function renderAll(data) {
+  renderSummarySale(data);
+  renderSummaryStock(data);
+  renderSummarySCBand(data);
+  renderSummarySize(data);
+  renderSummaryRemark(data);
+  renderSummaryCategory(data);
 }
 
-// -------------------------------
-// Populate Filter Dropdowns
-// -------------------------------
-function populateFilters(data) {
-  const monthSet = new Set();
-  const fcSet = new Set();
-  const categorySet = new Set();
-  const remarkSet = new Set();
-  const styleSet = new Set();
+function setupDropdown(key, values) {
+  const dropdown = document.querySelector(`[data-filter="${key}"]`);
+  const toggle = dropdown.querySelector(".dropdown-toggle");
+  const menu = dropdown.querySelector(".dropdown-menu");
 
-  data.sale.forEach(r => {
-    monthSet.add(r["Month"]);
-    fcSet.add(r["FC"]);
-    styleSet.add(r["Style ID"]);
-  });
+  menu.innerHTML = "";
 
-  data.styleStatus.forEach(r => {
-    categorySet.add(r["Category"]);
-    remarkSet.add(r["Company Remark"]);
-  });
-
-  fillSelect("filter-month", [...monthSet]);
-  fillSelect("filter-fc", [...fcSet]);
-  fillSelect("filter-category", [...categorySet]);
-  fillSelect("filter-remark", [...remarkSet]);
-
-  window.__STYLE_IDS__ = [...styleSet];
-}
-
-function fillSelect(id, values) {
-  const el = document.getElementById(id);
-  if (!el) return;
-
-  el.innerHTML = "";
   values.sort().forEach(v => {
-    if (v) {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      el.appendChild(opt);
-    }
+    if (!v) return;
+    const label = document.createElement("label");
+    label.innerHTML = `<input type="checkbox" value="${v}"> ${v}`;
+    menu.appendChild(label);
+  });
+
+  toggle.onclick = () => dropdown.classList.toggle("open");
+
+  menu.addEventListener("change", () => {
+    const selected = [...menu.querySelectorAll("input:checked")].map(
+      i => i.value
+    );
+    setFilter(key, selected);
+    rerender();
   });
 }
 
-// -------------------------------
-// Attach UI Events
-// -------------------------------
-function attachFilterEvents() {
-  const monthEl = document.getElementById("filter-month");
-  const fcEl = document.getElementById("filter-fc");
-  const catEl = document.getElementById("filter-category");
-  const remarkEl = document.getElementById("filter-remark");
+function rerender() {
+  renderAll(applyFilters(RAW_DATA));
+}
+
+async function init() {
+  RAW_DATA = await loadAllData();
+
+  setupDropdown("Month", [...new Set(RAW_DATA.sale.map(r => r["Month"]))]);
+  setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
+  setupDropdown("Category", [...new Set(RAW_DATA.styleStatus.map(r => r["Category"]))]);
+  setupDropdown("CompanyRemark", [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]);
+
   const styleInput = document.getElementById("style-search");
-
-  monthEl.addEventListener("change", () => {
-    setFilter("Month", [...monthEl.selectedOptions].map(o => o.value));
-    rerender();
-  });
-
-  fcEl.addEventListener("change", () => {
-    setFilter("FC", [...fcEl.selectedOptions].map(o => o.value));
-    rerender();
-  });
-
-  catEl.addEventListener("change", () => {
-    setFilter("Category", [...catEl.selectedOptions].map(o => o.value));
-    rerender();
-  });
-
-  remarkEl.addEventListener("change", () => {
-    setFilter("CompanyRemark", [...remarkEl.selectedOptions].map(o => o.value));
-    rerender();
-  });
+  const clearBtn = document.getElementById("clear-style-search");
 
   styleInput.addEventListener("input", e => {
     setStyleSearch(e.target.value);
     rerender();
   });
-}
 
-// -------------------------------
-// Re-render Pipeline
-// -------------------------------
-function rerender() {
-  const filtered = applyFilters(RAW_DATA);
-  renderAll(filtered);
-}
-
-// -------------------------------
-// Init
-// -------------------------------
-async function initApp() {
-  try {
-    RAW_DATA = await loadAllData();
-
-    populateFilters(RAW_DATA);
-    attachFilterEvents();
-
+  clearBtn.onclick = () => {
+    styleInput.value = "";
+    setStyleSearch("");
     rerender();
+  };
 
-    console.log("🚀 Filters wired successfully");
-  } catch (err) {
-    console.error(err);
-    alert("Failed to load data");
-  }
+  rerender();
 }
 
-initApp();
+init();
