@@ -3,13 +3,19 @@
 // ==========================================
 
 import { loadAllData } from "./core/fetchData.js";
+import { renderSummarySale } from "./summary/summarySale.js";
 
 async function initApp() {
   try {
     const data = await loadAllData();
 
-    // Expose globally (READ-ONLY usage)
+    // Expose globally (read-only usage)
     window.APP_DATA = data;
+
+    // -------------------------------
+    // Render Summary 1 ONLY
+    // -------------------------------
+    renderSummarySale(data);
 
     console.log("🚀 Demand Planning App Ready");
   } catch (error) {
