@@ -93,10 +93,11 @@ main {
 
 /* Card title */
 .summary-box h3 {
-  margin: 0 0 12px 0;
+  margin: 0 0 14px 0;
   font-size: 15px;
   font-weight: 600;
   color: #111827;
+  text-align: center;
 }
 
 /* ===============================
@@ -112,33 +113,19 @@ main {
   background: #f8fafc;
 }
 
-.summary-table th {
-  text-align: left;
-  padding: 8px 10px;
-  font-weight: 600;
-  border-bottom: 1px solid #e5e7eb;
-  color: #374151;
-}
-
+.summary-table th,
 .summary-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: center;
 }
 
 .summary-table tbody tr:hover {
   background: #f9fafb;
 }
 
-/* Right align numbers */
-.summary-table td:nth-child(2),
-.summary-table td:nth-child(3),
-.summary-table th:nth-child(2),
-.summary-table th:nth-child(3) {
-  text-align: right;
-}
-
 /* ===============================
-   REPORT TABS (UI READY)
+   REPORT TABS
 ================================ */
 .tabs {
   margin-top: 10px;
