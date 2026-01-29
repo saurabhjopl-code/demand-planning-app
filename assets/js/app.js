@@ -1,5 +1,5 @@
 // ===================================================
-// Demand Planning App – V1.2 (LOCKED RESET POINT)
+// Demand Planning App – V1.2.1 (STABLE FIX)
 // ===================================================
 
 // -------- Core --------
@@ -13,10 +13,6 @@ import { renderSummarySCBand } from "./summary/summarySCBand.js";
 import { renderSummarySize } from "./summary/summarySize.js";
 import { renderSummaryRemark } from "./summary/summaryRemark.js";
 import { renderSummaryCategory } from "./summary/summaryCategory.js";
-
-// -------- Reports --------
-import { renderDemandReport } from "./reports/demandReport.js";
-// (Overstock, Size Curve, Broken Size will be added later)
 
 // ===================================================
 // GLOBAL STATE
@@ -35,14 +31,31 @@ function renderAllSummaries(filteredData) {
   renderSummaryCategory(filteredData);
 }
 
-function renderActiveReport(filteredData) {
+// ===================================================
+// REPORT RENDERER (SAFE, DYNAMIC)
+// ===================================================
+async function renderActiveReport(filteredData) {
   const activeTab = document.querySelector(".tabs button.active");
   if (!activeTab) return;
 
   const report = activeTab.dataset.report;
+  if (!report) return;
 
-  if (report === "demand") {
-    renderDemandReport(filteredData);
+  try {
+    if (report === "demand") {
+      const module = await import("./reports/demandReport.js");
+      module.renderDemandReport(filteredData);
+    }
+
+    // Future reports (safe placeholders)
+    // else if (report === "overstock") { ... }
+
+  } catch (err) {
+    console.warn(`⚠️ Report "${report}" not loaded:`, err.message);
+    document.querySelector(".tab-content").innerHTML =
+      `<p style="padding:12px;color:#6b7280">
+        Report not available yet.
+      </p>`;
   }
 }
 
@@ -67,15 +80,12 @@ function setupDropdown(filterKey, values) {
       menu.appendChild(label);
     });
 
-  toggle.onclick = () => {
-    dropdown.classList.toggle("open");
-  };
+  toggle.onclick = () => dropdown.classList.toggle("open");
 
   menu.addEventListener("change", () => {
-    const selected = [
-      ...menu.querySelectorAll("input:checked")
-    ].map(i => i.value);
-
+    const selected = [...menu.querySelectorAll("input:checked")].map(
+      i => i.value
+    );
     setFilter(filterKey, selected);
     rerender();
   });
@@ -104,8 +114,8 @@ function setupTabs() {
     });
   });
 
-  // Default tab
-  tabs[0].classList.add("active");
+  // Default tab = Demand (only if exists)
+  if (tabs.length) tabs[0].classList.add("active");
 }
 
 // ===================================================
@@ -115,32 +125,19 @@ async function initApp() {
   try {
     RAW_DATA = await loadAllData();
 
-    // -------------------------------
-    // Setup Filters
-    // -------------------------------
-    setupDropdown(
-      "Month",
-      [...new Set(RAW_DATA.sale.map(r => r["Month"]))]
-    );
-
-    setupDropdown(
-      "FC",
-      [...new Set(RAW_DATA.sale.map(r => r["FC"]))]
-    );
-
+    // Filters
+    setupDropdown("Month", [...new Set(RAW_DATA.sale.map(r => r["Month"]))]);
+    setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
     setupDropdown(
       "Category",
       [...new Set(RAW_DATA.styleStatus.map(r => r["Category"]))]
     );
-
     setupDropdown(
       "CompanyRemark",
       [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]
     );
 
-    // -------------------------------
-    // Style ID Search
-    // -------------------------------
+    // Style Search
     const styleInput = document.getElementById("style-search");
     const clearBtn = document.getElementById("clear-style-search");
 
@@ -155,19 +152,12 @@ async function initApp() {
       rerender();
     });
 
-    // -------------------------------
-    // Tabs
-    // -------------------------------
     setupTabs();
-
-    // -------------------------------
-    // Initial Render
-    // -------------------------------
     rerender();
 
-    console.log("✅ Demand Planning App V1.2 Loaded Successfully");
+    console.log("✅ Demand Planning App V1.2.1 Loaded (Stable)");
   } catch (error) {
-    console.error("❌ App Init Failed:", error);
+    console.error("❌ Init failed:", error);
     alert("Failed to load data");
   }
 }
