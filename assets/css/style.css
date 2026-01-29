@@ -1,0 +1,62 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+}
+
+.app-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 15px 30px;
+  background: #1f2937;
+  color: #fff;
+}
+
+.app-header h1 {
+  margin: 0;
+  text-align: center;
+}
+
+.logo {
+  font-weight: bold;
+}
+
+.exports {
+  text-align: right;
+}
+
+.exports button {
+  margin-left: 10px;
+  padding: 6px 12px;
+}
+
+main {
+  padding: 20px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.summary-box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 6px;
+  min-height: 140px;
+  font-weight: bold;
+}
+
+.tabs button {
+  margin-right: 10px;
+  padding: 6px 12px;
+}
+
+footer {
+  margin-top: 30px;
+  padding: 12px;
+  text-align: center;
+  background: #e5e7eb;
+}
