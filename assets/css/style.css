@@ -1,5 +1,5 @@
 /* ===============================
-   GLOBAL
+   GLOBAL RESET
 ================================ */
 * {
   box-sizing: border-box;
@@ -7,7 +7,7 @@
 
 body {
   margin: 0;
-  font-family: Inter, Segoe UI, Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
   background: #f1f3f6;
   color: #1f2937;
 }
@@ -21,7 +21,7 @@ body {
   align-items: center;
   padding: 16px 32px;
   background: #0f172a;
-  color: #fff;
+  color: #ffffff;
 }
 
 .app-header h1 {
@@ -42,12 +42,17 @@ body {
 
 .exports button {
   background: #2563eb;
-  color: #fff;
   border: none;
+  color: #ffffff;
   padding: 8px 14px;
   border-radius: 6px;
+  font-size: 13px;
   margin-left: 8px;
   cursor: pointer;
+}
+
+.exports button:hover {
+  background: #1d4ed8;
 }
 
 /* ===============================
@@ -64,10 +69,10 @@ main {
   display: grid;
   grid-template-columns: repeat(4, 1fr) 1.5fr;
   gap: 16px;
-  background: #fff;
+  background: #ffffff;
   padding: 16px;
   border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
   margin-bottom: 24px;
 }
 
@@ -78,7 +83,9 @@ main {
   display: block;
 }
 
-/* Dropdown */
+/* ===============================
+   DROPDOWN MULTISELECT
+================================ */
 .dropdown {
   position: relative;
 }
@@ -87,7 +94,7 @@ main {
   padding: 8px 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  background: #fff;
+  background: #ffffff;
   font-size: 13px;
   cursor: pointer;
 }
@@ -95,14 +102,16 @@ main {
 .dropdown-menu {
   display: none;
   position: absolute;
-  width: 100%;
   top: 105%;
-  background: #fff;
+  left: 0;
+  width: 100%;
+  background: #ffffff;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   max-height: 220px;
   overflow-y: auto;
   z-index: 20;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
 .dropdown.open .dropdown-menu {
@@ -114,13 +123,16 @@ main {
   align-items: center;
   padding: 6px 10px;
   font-size: 13px;
+  cursor: pointer;
 }
 
 .dropdown-menu input {
   margin-right: 8px;
 }
 
-/* Search */
+/* ===============================
+   SEARCH
+================================ */
 .search-wrapper {
   position: relative;
 }
@@ -130,6 +142,7 @@ main {
   padding: 8px 30px 8px 10px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
+  font-size: 13px;
 }
 
 #clear-style-search {
@@ -137,7 +150,9 @@ main {
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
+  font-size: 14px;
   cursor: pointer;
+  color: #6b7280;
   display: none;
 }
 
@@ -148,6 +163,13 @@ main {
 /* ===============================
    SUMMARY
 ================================ */
+#summary-section h2,
+#reports-section h2 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -155,10 +177,10 @@ main {
 }
 
 .summary-box {
-  background: #fff;
-  padding: 18px;
+  background: #ffffff;
   border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  padding: 18px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
   min-height: 220px;
 }
 
@@ -171,15 +193,51 @@ main {
   font-size: 13px;
 }
 
+.summary-table thead {
+  background: #f8fafc;
+}
+
 .summary-table th,
 .summary-table td {
   border: 1px solid #e5e7eb;
   padding: 8px;
   text-align: center;
+  vertical-align: middle;
 }
 
-.summary-table thead {
-  background: #f8fafc;
+.summary-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* ===============================
+   REPORT TABS (FIXED)
+================================ */
+.tabs {
+  margin: 12px 0;
+}
+
+.tabs button {
+  background: #e5e7eb;
+  border: none;
+  padding: 8px 16px;
+  margin-right: 6px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #374151;
+}
+
+.tabs button.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.tabs button:hover {
+  background: #d1d5db;
+}
+
+.tabs button.active:hover {
+  background: #1d4ed8;
 }
 
 /* ===============================
