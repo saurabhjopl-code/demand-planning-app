@@ -1,5 +1,5 @@
 // ===================================================
-// Demand Planning App – V1.2.1 (STABLE FIX)
+// Demand Planning App – V1.3.3 (STABLE)
 // ===================================================
 
 // -------- Core --------
@@ -14,13 +14,18 @@ import { renderSummarySize } from "./summary/summarySize.js";
 import { renderSummaryRemark } from "./summary/summaryRemark.js";
 import { renderSummaryCategory } from "./summary/summaryCategory.js";
 
-// ===================================================
-// GLOBAL STATE
+// -------- Reports (STATIC IMPORTS) --------
+import { renderDemandReport } from "./reports/demandReport.js";
+// Future reports will be added here:
+// import { renderOverstockReport } from "./reports/overstockReport.js";
+// import { renderSizeCurveReport } from "./reports/sizeCurveReport.js";
+// import { renderBrokenSizeReport } from "./reports/brokenSizeReport.js";
+
 // ===================================================
 let RAW_DATA = null;
 
 // ===================================================
-// RENDER HELPERS
+// SUMMARY RENDER
 // ===================================================
 function renderAllSummaries(filteredData) {
   renderSummarySale(filteredData);
@@ -32,27 +37,23 @@ function renderAllSummaries(filteredData) {
 }
 
 // ===================================================
-// REPORT RENDERER (SAFE, DYNAMIC)
+// REPORT RENDER
 // ===================================================
-async function renderActiveReport(filteredData) {
+function renderActiveReport(filteredData) {
   const activeTab = document.querySelector(".tabs button.active");
   if (!activeTab) return;
 
   const report = activeTab.dataset.report;
-  if (!report) return;
+  const container = document.querySelector(".tab-content");
 
-  try {
-    if (report === "demand") {
-      const module = await import("./reports/demandReport.js");
-      module.renderDemandReport(filteredData);
-    }
+  if (!container) return;
 
-    // Future reports (safe placeholders)
-    // else if (report === "overstock") { ... }
+  container.innerHTML = "";
 
-  } catch (err) {
-    console.warn(`⚠️ Report "${report}" not loaded:`, err.message);
-    document.querySelector(".tab-content").innerHTML =
+  if (report === "demand") {
+    renderDemandReport(filteredData);
+  } else {
+    container.innerHTML =
       `<p style="padding:12px;color:#6b7280">
         Report not available yet.
       </p>`;
@@ -60,7 +61,7 @@ async function renderActiveReport(filteredData) {
 }
 
 // ===================================================
-// FILTER DROPDOWNS (CHECKBOX STYLE)
+// FILTER DROPDOWNS
 // ===================================================
 function setupDropdown(filterKey, values) {
   const dropdown = document.querySelector(`[data-filter="${filterKey}"]`);
@@ -114,8 +115,11 @@ function setupTabs() {
     });
   });
 
-  // Default tab = Demand (only if exists)
-  if (tabs.length) tabs[0].classList.add("active");
+  // Default tab = Demand
+  if (tabs.length) {
+    tabs.forEach(t => t.classList.remove("active"));
+    tabs[0].classList.add("active");
+  }
 }
 
 // ===================================================
@@ -155,9 +159,9 @@ async function initApp() {
     setupTabs();
     rerender();
 
-    console.log("✅ Demand Planning App V1.2.1 Loaded (Stable)");
-  } catch (error) {
-    console.error("❌ Init failed:", error);
+    console.log("✅ Demand Planning App V1.3.3 Loaded");
+  } catch (err) {
+    console.error("❌ App init failed:", err);
     alert("Failed to load data");
   }
 }
