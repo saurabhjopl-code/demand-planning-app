@@ -1,25 +1,39 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
+/* ===============================
+   GLOBAL RESET & BASE
+================================ */
+* {
+  box-sizing: border-box;
 }
 
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  background: #f1f3f6;
+  color: #1f2937;
+}
+
+/* ===============================
+   HEADER
+================================ */
 .app-header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  padding: 15px 30px;
-  background: #1f2937;
-  color: #fff;
+  padding: 16px 32px;
+  background: #0f172a;
+  color: #ffffff;
 }
 
 .app-header h1 {
   margin: 0;
+  font-size: 22px;
+  font-weight: 600;
   text-align: center;
 }
 
 .logo {
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .exports {
@@ -27,36 +41,131 @@ body {
 }
 
 .exports button {
-  margin-left: 10px;
-  padding: 6px 12px;
+  background: #2563eb;
+  border: none;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-left: 8px;
+  cursor: pointer;
 }
 
+.exports button:hover {
+  background: #1d4ed8;
+}
+
+/* ===============================
+   MAIN LAYOUT
+================================ */
 main {
-  padding: 20px;
+  padding: 28px 32px;
 }
 
+#summary-section h2,
+#reports-section h2 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* ===============================
+   SUMMARY GRID
+================================ */
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 20px;
 }
 
+/* ===============================
+   SUMMARY CARD
+================================ */
 .summary-box {
-  background: #fff;
-  padding: 20px;
-  border-radius: 6px;
-  min-height: 140px;
-  font-weight: bold;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card title */
+.summary-box h3 {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ===============================
+   TABLE STYLING
+================================ */
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.summary-table thead {
+  background: #f8fafc;
+}
+
+.summary-table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+  color: #374151;
+}
+
+.summary-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.summary-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* Right align numbers */
+.summary-table td:nth-child(2),
+.summary-table td:nth-child(3),
+.summary-table th:nth-child(2),
+.summary-table th:nth-child(3) {
+  text-align: right;
+}
+
+/* ===============================
+   REPORT TABS (UI READY)
+================================ */
+.tabs {
+  margin-top: 10px;
 }
 
 .tabs button {
-  margin-right: 10px;
-  padding: 6px 12px;
+  background: #e5e7eb;
+  border: none;
+  padding: 8px 14px;
+  margin-right: 6px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
 }
 
+.tabs button:hover {
+  background: #d1d5db;
+}
+
+/* ===============================
+   FOOTER
+================================ */
 footer {
-  margin-top: 30px;
-  padding: 12px;
+  margin-top: 40px;
+  padding: 14px;
   text-align: center;
-  background: #e5e7eb;
+  font-size: 12px;
+  color: #6b7280;
+  background: #f8fafc;
 }
