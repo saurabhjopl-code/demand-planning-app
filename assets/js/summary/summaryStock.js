@@ -6,6 +6,7 @@
 // DRR = FC Total Units Sold / GLOBAL Total Sale Days
 // SC  = Total Stock / DRR
 //
+// Sorted by Total Stock (High → Low)
 // Includes Grand Total row (consolidated calculation)
 // ===================================================
 
@@ -42,15 +43,60 @@ export function renderSummaryStock(data) {
   });
 
   // -------------------------------
-  // Prepare FC list
+  // Build FC-level rows
   // -------------------------------
+  const rows = [];
+  let grandTotalStock = 0;
+  let grandTotalSales = 0;
+
   const allFCs = new Set([
     ...Object.keys(saleMap),
     ...Object.keys(stockMap)
   ]);
 
-  let grandTotalStock = 0;
-  let grandTotalSales = 0;
+  allFCs.forEach(fc => {
+    const totalStock = stockMap[fc] || 0;
+    const totalUnitsSold = saleMap[fc] || 0;
+
+    grandTotalStock += totalStock;
+    grandTotalSales += totalUnitsSold;
+
+    const drr =
+      totalSaleDays > 0 ? totalUnitsSold / totalSaleDays : 0;
+
+    let sc = 0;
+    if (drr === 0 && totalStock > 0) {
+      sc = "∞";
+    } else if (drr > 0) {
+      sc = (totalStock / drr).toFixed(0);
+    }
+
+    rows.push({
+      fc,
+      totalStock,
+      totalUnitsSold,
+      drr: drr.toFixed(2),
+      sc
+    });
+  });
+
+  // -------------------------------
+  // SORT: Total Stock High → Low
+  // -------------------------------
+  rows.sort((a, b) => b.totalStock - a.totalStock);
+
+  // -------------------------------
+  // Grand Total Calculation
+  // -------------------------------
+  const grandDRR =
+    totalSaleDays > 0 ? grandTotalSales / totalSaleDays : 0;
+
+  let grandSC = 0;
+  if (grandDRR === 0 && grandTotalStock > 0) {
+    grandSC = "∞";
+  } else if (grandDRR > 0) {
+    grandSC = (grandTotalStock / grandDRR).toFixed(0);
+  }
 
   // -------------------------------
   // Build Table HTML
@@ -70,47 +116,21 @@ export function renderSummaryStock(data) {
       <tbody>
   `;
 
-  allFCs.forEach(fc => {
-    const totalStock = stockMap[fc] || 0;
-    const totalUnitsSold = saleMap[fc] || 0;
-
-    grandTotalStock += totalStock;
-    grandTotalSales += totalUnitsSold;
-
-    const drr =
-      totalSaleDays > 0 ? totalUnitsSold / totalSaleDays : 0;
-
-    let sc = 0;
-    if (drr === 0 && totalStock > 0) {
-      sc = "∞";
-    } else if (drr > 0) {
-      sc = (totalStock / drr).toFixed(0);
-    }
-
+  rows.forEach(row => {
     html += `
       <tr>
-        <td>${fc}</td>
-        <td>${totalStock}</td>
-        <td>${totalUnitsSold}</td>
-        <td>${drr.toFixed(2)}</td>
-        <td>${sc}</td>
+        <td>${row.fc}</td>
+        <td>${row.totalStock}</td>
+        <td>${row.totalUnitsSold}</td>
+        <td>${row.drr}</td>
+        <td>${row.sc}</td>
       </tr>
     `;
   });
 
   // -------------------------------
-  // Grand Total Row (LOCKED LOGIC)
+  // Grand Total Row (Always Last)
   // -------------------------------
-  const grandDRR =
-    totalSaleDays > 0 ? grandTotalSales / totalSaleDays : 0;
-
-  let grandSC = 0;
-  if (grandDRR === 0 && grandTotalStock > 0) {
-    grandSC = "∞";
-  } else if (grandDRR > 0) {
-    grandSC = (grandTotalStock / grandDRR).toFixed(0);
-  }
-
   html += `
     <tr style="font-weight:600; background:#f8fafc;">
       <td>Grand Total</td>
