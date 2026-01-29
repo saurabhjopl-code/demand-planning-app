@@ -1,4 +1,84 @@
-/* ===== FILTER DROPDOWN ===== */
+/* ===============================
+   GLOBAL
+================================ */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  background: #f1f3f6;
+  color: #1f2937;
+}
+
+/* ===============================
+   HEADER
+================================ */
+.app-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 16px 32px;
+  background: #0f172a;
+  color: #fff;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.logo {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.exports {
+  text-align: right;
+}
+
+.exports button {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+/* ===============================
+   MAIN
+================================ */
+main {
+  padding: 24px 32px;
+}
+
+/* ===============================
+   FILTER BAR
+================================ */
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 1.5fr;
+  gap: 16px;
+  background: #fff;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  margin-bottom: 24px;
+}
+
+.filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* Dropdown */
 .dropdown {
   position: relative;
 }
@@ -15,16 +95,14 @@
 .dropdown-menu {
   display: none;
   position: absolute;
-  top: 105%;
-  left: 0;
   width: 100%;
+  top: 105%;
   background: #fff;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
   max-height: 220px;
   overflow-y: auto;
-  z-index: 10;
+  z-index: 20;
 }
 
 .dropdown.open .dropdown-menu {
@@ -36,20 +114,22 @@
   align-items: center;
   padding: 6px 10px;
   font-size: 13px;
-  cursor: pointer;
 }
 
 .dropdown-menu input {
   margin-right: 8px;
 }
 
-/* ===== SEARCH ===== */
+/* Search */
 .search-wrapper {
   position: relative;
 }
 
 .search-wrapper input {
-  padding-right: 26px;
+  width: 100%;
+  padding: 8px 30px 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
 }
 
 #clear-style-search {
@@ -57,12 +137,59 @@
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 14px;
   cursor: pointer;
-  color: #6b7280;
   display: none;
 }
 
 .search-wrapper input:not(:placeholder-shown) + #clear-style-search {
   display: block;
+}
+
+/* ===============================
+   SUMMARY
+================================ */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.summary-box {
+  background: #fff;
+  padding: 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  min-height: 220px;
+}
+
+/* ===============================
+   TABLES
+================================ */
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.summary-table th,
+.summary-table td {
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  text-align: center;
+}
+
+.summary-table thead {
+  background: #f8fafc;
+}
+
+/* ===============================
+   FOOTER
+================================ */
+footer {
+  margin-top: 40px;
+  padding: 14px;
+  text-align: center;
+  font-size: 12px;
+  color: #6b7280;
+  background: #f8fafc;
 }
