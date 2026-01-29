@@ -62,13 +62,6 @@ main {
   padding: 28px 32px;
 }
 
-#summary-section h2,
-#reports-section h2 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
 /* ===============================
    SUMMARY GRID
 ================================ */
@@ -91,12 +84,10 @@ main {
   flex-direction: column;
 }
 
-/* Card title */
 .summary-box h3 {
   margin: 0 0 14px 0;
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
   text-align: center;
 }
 
@@ -109,40 +100,16 @@ main {
   font-size: 13px;
 }
 
-.summary-table thead {
-  background: #f8fafc;
-}
-
 .summary-table th,
 .summary-table td {
   padding: 10px;
-  border-bottom: 1px solid #e5e7eb;
+  border: 1px solid #e5e7eb;
   text-align: center;
+  vertical-align: middle;
 }
 
-.summary-table tbody tr:hover {
-  background: #f9fafb;
-}
-
-/* ===============================
-   REPORT TABS
-================================ */
-.tabs {
-  margin-top: 10px;
-}
-
-.tabs button {
-  background: #e5e7eb;
-  border: none;
-  padding: 8px 14px;
-  margin-right: 6px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.tabs button:hover {
-  background: #d1d5db;
+.summary-table thead {
+  background: #f8fafc;
 }
 
 /* ===============================
