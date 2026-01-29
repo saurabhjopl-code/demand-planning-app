@@ -1,212 +1,68 @@
-/* ===============================
-   GLOBAL RESET & BASE
-================================ */
-* {
-  box-sizing: border-box;
+/* ===== FILTER DROPDOWN ===== */
+.dropdown {
+  position: relative;
 }
 
-body {
-  margin: 0;
-  font-family: "Inter", "Segoe UI", Arial, sans-serif;
-  background: #f1f3f6;
-  color: #1f2937;
-}
-
-/* ===============================
-   HEADER
-================================ */
-.app-header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  padding: 16px 32px;
-  background: #0f172a;
-  color: #ffffff;
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.logo {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.exports {
-  text-align: right;
-}
-
-.exports button {
-  background: #2563eb;
-  border: none;
-  color: #ffffff;
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  margin-left: 8px;
-  cursor: pointer;
-}
-
-.exports button:hover {
-  background: #1d4ed8;
-}
-
-/* ===============================
-   MAIN
-================================ */
-main {
-  padding: 24px 32px;
-}
-
-/* ===============================
-   FILTER BAR
-================================ */
-.filter-bar {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr) 1.5fr;
-  gap: 16px;
-  background: #ffffff;
-  padding: 16px;
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-  margin-bottom: 24px;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.filter-group label {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #374151;
-}
-
-.filter-group select,
-.filter-group input {
+.dropdown-toggle {
   padding: 8px 10px;
-  font-size: 13px;
-  border-radius: 6px;
   border: 1px solid #d1d5db;
-  background: #ffffff;
-  cursor: pointer;
-}
-
-.filter-group select[multiple] {
-  height: 34px;
-}
-
-.filter-group select:disabled,
-.filter-group input:disabled {
-  background: #f3f4f6;
-  cursor: not-allowed;
-}
-
-.search-group input:focus {
-  border-color: #2563eb;
-  outline: none;
-}
-
-/* ===============================
-   SECTION HEADINGS
-================================ */
-#summary-section h2,
-#reports-section h2 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-/* ===============================
-   SUMMARY GRID
-================================ */
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-/* ===============================
-   SUMMARY CARD
-================================ */
-.summary-box {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 18px 20px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-  min-height: 220px;
-  display: flex;
-  flex-direction: column;
-}
-
-.summary-box h3 {
-  margin: 0 0 14px 0;
-  font-size: 15px;
-  font-weight: 600;
-  text-align: center;
-  color: #111827;
-}
-
-/* ===============================
-   TABLE STYLING
-================================ */
-.summary-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.summary-table thead {
-  background: #f8fafc;
-}
-
-.summary-table th,
-.summary-table td {
-  padding: 10px;
-  border: 1px solid #e5e7eb;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.summary-table tbody tr:hover {
-  background: #f9fafb;
-}
-
-/* ===============================
-   REPORT TABS
-================================ */
-.tabs {
-  margin-top: 10px;
-}
-
-.tabs button {
-  background: #e5e7eb;
-  border: none;
-  padding: 8px 14px;
-  margin-right: 6px;
   border-radius: 6px;
+  background: #fff;
   font-size: 13px;
   cursor: pointer;
 }
 
-.tabs button:hover {
-  background: #d1d5db;
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 105%;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
 }
 
-/* ===============================
-   FOOTER
-================================ */
-footer {
-  margin-top: 40px;
-  padding: 14px;
-  text-align: center;
-  font-size: 12px;
+.dropdown.open .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu label {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dropdown-menu input {
+  margin-right: 8px;
+}
+
+/* ===== SEARCH ===== */
+.search-wrapper {
+  position: relative;
+}
+
+.search-wrapper input {
+  padding-right: 26px;
+}
+
+#clear-style-search {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  cursor: pointer;
   color: #6b7280;
-  background: #f8fafc;
+  display: none;
+}
+
+.search-wrapper input:not(:placeholder-shown) + #clear-style-search {
+  display: block;
 }
