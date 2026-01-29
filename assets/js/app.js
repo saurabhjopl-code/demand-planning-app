@@ -9,6 +9,7 @@ import { renderSummaryRemark } from "./summary/summaryRemark.js";
 import { renderSummaryCategory } from "./summary/summaryCategory.js";
 
 import { renderDemandReport } from "./reports/demandReport.js";
+import { renderOverstockReport } from "./reports/overstockReport.js";
 
 let RAW_DATA;
 
@@ -30,8 +31,11 @@ function renderReport(data) {
 
   if (active.dataset.report === "demand") {
     renderDemandReport(data);
+  } else if (active.dataset.report === "overstock") {
+    renderOverstockReport(data);
   } else {
-    container.innerHTML = `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
+    container.innerHTML =
+      `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
   }
 }
 
@@ -83,8 +87,14 @@ async function init() {
 
   setupDropdown("Month", [...new Set(RAW_DATA.sale.map(r => r["Month"]))]);
   setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
-  setupDropdown("Category", [...new Set(RAW_DATA.styleStatus.map(r => r["Category"]))]);
-  setupDropdown("CompanyRemark", [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]);
+  setupDropdown(
+    "Category",
+    [...new Set(RAW_DATA.styleStatus.map(r => r["Category"]))]
+  );
+  setupDropdown(
+    "CompanyRemark",
+    [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]
+  );
 
   const styleInput = document.getElementById("style-search");
   const clearBtn = document.getElementById("clear-style-search");
