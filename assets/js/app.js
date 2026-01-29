@@ -10,6 +10,7 @@ import { renderSummaryCategory } from "./summary/summaryCategory.js";
 
 import { renderDemandReport } from "./reports/demandReport.js";
 import { renderOverstockReport } from "./reports/overstockReport.js";
+import { renderSizeCurveReport } from "./reports/sizeCurveReport.js";
 
 let RAW_DATA;
 
@@ -33,6 +34,8 @@ function renderReport(data) {
     renderDemandReport(data);
   } else if (active.dataset.report === "overstock") {
     renderOverstockReport(data);
+  } else if (active.dataset.report === "sizecurve") {
+    renderSizeCurveReport(data);
   } else {
     container.innerHTML =
       `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
