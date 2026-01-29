@@ -2,6 +2,9 @@
 // Summary 4: Size-wise Analysis Summary
 // Table:
 // Size | Category | Units Sold | % Share | Category % Share | Units in Stock
+//
+// - XS treated as Normal
+// - Category & Category % Share merged (rowspan)
 // ===================================================
 
 export function renderSummarySize(data) {
@@ -17,7 +20,7 @@ export function renderSummarySize(data) {
   function getSizeCategory(size) {
     if (size === "FS") return "FS";
 
-    const normalSizes = ["S", "M", "L", "XL", "XXL"];
+    const normalSizes = ["XS", "S", "M", "L", "XL", "XXL"];
     const plus1Sizes = ["3XL", "4XL", "5XL", "6XL"];
     const plus2Sizes = ["7XL", "8XL", "9XL", "10XL"];
 
@@ -56,61 +59,32 @@ export function renderSummarySize(data) {
   });
 
   // -------------------------------
-  // Category → Sale Units
+  // Category → Sizes + Sale Units
   // -------------------------------
-  const categorySaleMap = {};
+  const categoryMap = {};
 
   Object.keys(sizeSaleMap).forEach(size => {
     const category = getSizeCategory(size);
-    const units = sizeSaleMap[size];
+    if (!categoryMap[category]) {
+      categoryMap[category] = {
+        sizes: [],
+        saleUnits: 0
+      };
+    }
 
-    if (!categorySaleMap[category]) categorySaleMap[category] = 0;
-    categorySaleMap[category] += units;
+    categoryMap[category].sizes.push(size);
+    categoryMap[category].saleUnits += sizeSaleMap[size];
   });
 
   // -------------------------------
-  // Build Rows
-  // -------------------------------
-  const rows = [];
-
-  Object.keys(sizeSaleMap).forEach(size => {
-    const unitsSold = sizeSaleMap[size];
-    const stockUnits = sizeStockMap[size] || 0;
-    const category = getSizeCategory(size);
-
-    const share =
-      totalSaleUnits > 0
-        ? ((unitsSold / totalSaleUnits) * 100).toFixed(2)
-        : "0.00";
-
-    const categoryShare =
-      totalSaleUnits > 0
-        ? ((categorySaleMap[category] / totalSaleUnits) * 100).toFixed(2)
-        : "0.00";
-
-    rows.push({
-      size,
-      category,
-      unitsSold,
-      share,
-      categoryShare,
-      stockUnits
-    });
-  });
-
-  // -------------------------------
-  // Sort by predefined size order
+  // Size Order (Locked)
   // -------------------------------
   const sizeOrder = [
     "FS",
-    "S", "M", "L", "XL", "XXL",
+    "XS", "S", "M", "L", "XL", "XXL",
     "3XL", "4XL", "5XL", "6XL",
     "7XL", "8XL", "9XL", "10XL"
   ];
-
-  rows.sort(
-    (a, b) => sizeOrder.indexOf(a.size) - sizeOrder.indexOf(b.size)
-  );
 
   // -------------------------------
   // Build Table HTML
@@ -131,17 +105,51 @@ export function renderSummarySize(data) {
       <tbody>
   `;
 
-  rows.forEach(r => {
-    html += `
-      <tr>
-        <td>${r.size}</td>
-        <td>${r.category}</td>
-        <td>${r.unitsSold}</td>
-        <td>${r.share}%</td>
-        <td>${r.categoryShare}%</td>
-        <td>${r.stockUnits}</td>
-      </tr>
-    `;
+  // Loop category by category (to manage rowspan)
+  Object.keys(categoryMap).forEach(category => {
+    const sizes = categoryMap[category].sizes
+      .sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b));
+
+    const categoryShare =
+      totalSaleUnits > 0
+        ? ((categoryMap[category].saleUnits / totalSaleUnits) * 100).toFixed(2)
+        : "0.00";
+
+    sizes.forEach((size, index) => {
+      const unitsSold = sizeSaleMap[size];
+      const stockUnits = sizeStockMap[size] || 0;
+
+      const sizeShare =
+        totalSaleUnits > 0
+          ? ((unitsSold / totalSaleUnits) * 100).toFixed(2)
+          : "0.00";
+
+      html += `<tr>
+        <td>${size}</td>`;
+
+      // Category cell (merged)
+      if (index === 0) {
+        html += `
+          <td rowspan="${sizes.length}">${category}</td>
+        `;
+      }
+
+      html += `
+        <td>${unitsSold}</td>
+        <td>${sizeShare}%</td>
+      `;
+
+      // Category % Share cell (merged)
+      if (index === 0) {
+        html += `
+          <td rowspan="${sizes.length}">${categoryShare}%</td>
+        `;
+      }
+
+      html += `
+        <td>${stockUnits}</td>
+      </tr>`;
+    });
   });
 
   html += `
