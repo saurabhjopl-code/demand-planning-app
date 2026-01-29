@@ -97,7 +97,7 @@ export function renderSummarySize(data) {
           <th>Category</th>
           <th>Units Sold</th>
           <th>Total Units Sold</th>
-          <th>% Share</th>
+          <th>Size % Share</th>
           <th>Category % Share</th>
           <th>Units in Stock</th>
           <th>Total Stock</th>
