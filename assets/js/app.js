@@ -8,6 +8,8 @@ import { renderSummarySize } from "./summary/summarySize.js";
 import { renderSummaryRemark } from "./summary/summaryRemark.js";
 import { renderSummaryCategory } from "./summary/summaryCategory.js";
 
+import { renderDemandReport } from "./reports/demandReport.js";
+
 let RAW_DATA;
 
 function renderAll(data) {
@@ -17,6 +19,32 @@ function renderAll(data) {
   renderSummarySize(data);
   renderSummaryRemark(data);
   renderSummaryCategory(data);
+}
+
+function renderReport(data) {
+  const active = document.querySelector(".report-tabs button.active");
+  const container = document.getElementById("report-content");
+  if (!active || !container) return;
+
+  container.innerHTML = "";
+
+  if (active.dataset.report === "demand") {
+    renderDemandReport(data);
+  } else {
+    container.innerHTML = `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
+  }
+}
+
+function setupReportTabs() {
+  document.querySelectorAll(".report-tabs button").forEach(btn => {
+    btn.onclick = () => {
+      document
+        .querySelectorAll(".report-tabs button")
+        .forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderReport(applyFilters(RAW_DATA));
+    };
+  });
 }
 
 function setupDropdown(key, values) {
@@ -45,7 +73,9 @@ function setupDropdown(key, values) {
 }
 
 function rerender() {
-  renderAll(applyFilters(RAW_DATA));
+  const filtered = applyFilters(RAW_DATA);
+  renderAll(filtered);
+  renderReport(filtered);
 }
 
 async function init() {
@@ -70,6 +100,7 @@ async function init() {
     rerender();
   };
 
+  setupReportTabs();
   rerender();
 }
 
