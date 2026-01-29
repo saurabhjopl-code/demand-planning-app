@@ -1,5 +1,5 @@
 // ===================================================
-// Demand Planning App – V1.3.4 (BOOTSTRAP SAFE)
+// Demand Planning App – V1.3.5 (FILTER SAFE)
 // ===================================================
 
 // -------- Core --------
@@ -21,15 +21,15 @@ import { renderDemandReport } from "./reports/demandReport.js";
 let RAW_DATA = null;
 
 // ===================================================
-// VALIDATION
+// SAFE FILTER SETTER
+// Empty array = no filter
 // ===================================================
-function validateData(data) {
-  if (!data) return false;
-  if (!Array.isArray(data.sale)) return false;
-  if (!Array.isArray(data.stock)) return false;
-  if (!Array.isArray(data.styleStatus)) return false;
-  if (typeof data.totalSaleDays !== "number") return false;
-  return true;
+function safeSetFilter(key, values) {
+  if (!Array.isArray(values) || values.length === 0) {
+    setFilter(key, null); // IMPORTANT FIX
+  } else {
+    setFilter(key, values);
+  }
 }
 
 // ===================================================
@@ -52,10 +52,9 @@ function renderActiveReport(filteredData) {
   const container = document.querySelector(".tab-content");
   if (!activeTab || !container) return;
 
-  const report = activeTab.dataset.report;
   container.innerHTML = "";
 
-  if (report === "demand") {
+  if (activeTab.dataset.report === "demand") {
     renderDemandReport(filteredData);
   } else {
     container.innerHTML =
@@ -66,7 +65,7 @@ function renderActiveReport(filteredData) {
 }
 
 // ===================================================
-// FILTER DROPDOWNS
+// FILTER DROPDOWNS (SAFE)
 // ===================================================
 function setupDropdown(filterKey, values) {
   const dropdown = document.querySelector(`[data-filter="${filterKey}"]`);
@@ -92,7 +91,7 @@ function setupDropdown(filterKey, values) {
     const selected = [...menu.querySelectorAll("input:checked")].map(
       i => i.value
     );
-    setFilter(filterKey, selected);
+    safeSetFilter(filterKey, selected);
     rerender();
   });
 }
@@ -132,17 +131,9 @@ function setupTabs() {
 // ===================================================
 async function initApp() {
   try {
-    const data = await loadAllData();
+    RAW_DATA = await loadAllData();
 
-    if (!validateData(data)) {
-      console.error("❌ Invalid data structure:", data);
-      alert("Data structure error. Check console.");
-      return;
-    }
-
-    RAW_DATA = data;
-
-    // ---------------- Filters ----------------
+    // Filters
     setupDropdown("Month", [...new Set(RAW_DATA.sale.map(r => r["Month"]))]);
     setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
     setupDropdown(
@@ -154,27 +145,27 @@ async function initApp() {
       [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]
     );
 
-    // ---------------- Style Search ----------------
+    // Style Search
     const styleInput = document.getElementById("style-search");
     const clearBtn = document.getElementById("clear-style-search");
 
     styleInput.addEventListener("input", e => {
-      setStyleSearch(e.target.value);
+      setStyleSearch(e.target.value || null);
       rerender();
     });
 
     clearBtn.addEventListener("click", () => {
       styleInput.value = "";
-      setStyleSearch("");
+      setStyleSearch(null);
       rerender();
     });
 
     setupTabs();
     rerender();
 
-    console.log("✅ Demand Planning App V1.3.4 Loaded Successfully");
+    console.log("✅ Demand Planning App V1.3.5 Loaded (Summaries Restored)");
   } catch (err) {
-    console.error("❌ loadAllData failed:", err);
+    console.error("❌ App init failed:", err);
     alert("Failed to load data");
   }
 }
