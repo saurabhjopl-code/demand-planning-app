@@ -1,76 +1,96 @@
-import { loadAllData } from "./core/fetchData.js";
-import { applyFilters, setFilter, setStyleSearch } from "./core/filters.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Demand Planning</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
 
-import { renderSummarySale } from "./summary/summarySale.js";
-import { renderSummaryStock } from "./summary/summaryStock.js";
-import { renderSummarySCBand } from "./summary/summarySCBand.js";
-import { renderSummarySize } from "./summary/summarySize.js";
-import { renderSummaryRemark } from "./summary/summaryRemark.js";
-import { renderSummaryCategory } from "./summary/summaryCategory.js";
+<header class="app-header">
+  <div class="logo">LOGO</div>
+  <h1>Demand Planning</h1>
+  <div class="exports">
+    <button>Export Summary</button>
+    <button>Export Full Report</button>
+  </div>
+</header>
 
-let RAW_DATA;
+<main>
 
-function renderAll(data) {
-  renderSummarySale(data);
-  renderSummaryStock(data);
-  renderSummarySCBand(data);
-  renderSummarySize(data);
-  renderSummaryRemark(data);
-  renderSummaryCategory(data);
-}
+<!-- ================= FILTER BAR ================= -->
+<section class="filter-bar">
 
-function setupDropdown(key, values) {
-  const dropdown = document.querySelector(`[data-filter="${key}"]`);
-  const toggle = dropdown.querySelector(".dropdown-toggle");
-  const menu = dropdown.querySelector(".dropdown-menu");
+  <div class="filter-group dropdown" data-filter="Month">
+    <label>Month</label>
+    <div class="dropdown-toggle">Select Month</div>
+    <div class="dropdown-menu"></div>
+  </div>
 
-  menu.innerHTML = "";
+  <div class="filter-group dropdown" data-filter="FC">
+    <label>FC</label>
+    <div class="dropdown-toggle">Select FC</div>
+    <div class="dropdown-menu"></div>
+  </div>
 
-  values.sort().forEach(v => {
-    if (!v) return;
-    const label = document.createElement("label");
-    label.innerHTML = `<input type="checkbox" value="${v}"> ${v}`;
-    menu.appendChild(label);
-  });
+  <div class="filter-group dropdown" data-filter="Category">
+    <label>Category</label>
+    <div class="dropdown-toggle">Select Category</div>
+    <div class="dropdown-menu"></div>
+  </div>
 
-  toggle.onclick = () => dropdown.classList.toggle("open");
+  <div class="filter-group dropdown" data-filter="CompanyRemark">
+    <label>Company Remark</label>
+    <div class="dropdown-toggle">Select Remark</div>
+    <div class="dropdown-menu"></div>
+  </div>
 
-  menu.addEventListener("change", () => {
-    const selected = [...menu.querySelectorAll("input:checked")].map(
-      i => i.value
-    );
-    setFilter(key, selected);
-    rerender();
-  });
-}
+  <div class="filter-group search-group">
+    <label>Style ID Search</label>
+    <div class="search-wrapper">
+      <input id="style-search" type="text" placeholder="Search Style ID" />
+      <span id="clear-style-search">✕</span>
+    </div>
+  </div>
 
-function rerender() {
-  renderAll(applyFilters(RAW_DATA));
-}
+</section>
+<!-- ============================================== -->
 
-async function init() {
-  RAW_DATA = await loadAllData();
+<section id="summary-section">
+  <h2>Summary</h2>
+  <div class="summary-grid">
+    <div id="summary-1" class="summary-box"></div>
+    <div id="summary-2" class="summary-box"></div>
+    <div id="summary-3" class="summary-box"></div>
+    <div id="summary-4" class="summary-box"></div>
+    <div id="summary-5" class="summary-box"></div>
+    <div id="summary-6" class="summary-box"></div>
+  </div>
+</section>
 
-  setupDropdown("Month", [...new Set(RAW_DATA.sale.map(r => r["Month"]))]);
-  setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
-  setupDropdown("Category", [...new Set(RAW_DATA.styleStatus.map(r => r["Category"]))]);
-  setupDropdown("CompanyRemark", [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]);
+<!-- ================= REPORT SECTION (ADDED) ================= -->
+<section id="reports-section">
+  <h2>Reports</h2>
 
-  const styleInput = document.getElementById("style-search");
-  const clearBtn = document.getElementById("clear-style-search");
+  <div class="report-tabs">
+    <button class="active" data-report="demand">Demand</button>
+    <button data-report="overstock">Overstock</button>
+    <button data-report="sizecurve">Size Curve</button>
+    <button data-report="brokensize">Broken Size</button>
+  </div>
 
-  styleInput.addEventListener("input", e => {
-    setStyleSearch(e.target.value);
-    rerender();
-  });
+  <div id="report-content">
+    <!-- Report renders here -->
+  </div>
+</section>
+<!-- ========================================================== -->
 
-  clearBtn.onclick = () => {
-    styleInput.value = "";
-    setStyleSearch("");
-    rerender();
-  };
+</main>
 
-  rerender();
-}
+<footer>
+  © Copyright Rajnandini Fashion India Limited
+</footer>
 
-init();
+<script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
