@@ -1,5 +1,5 @@
 // ===================================================
-// Demand Report – 45 Days SC (V1.3.1 LOCKED)
+// Demand Report – 45 Days SC (FINAL FIXED VERSION)
 // ===================================================
 
 export function renderDemandReport(data) {
@@ -13,64 +13,63 @@ export function renderDemandReport(data) {
   // ----------------------------------
   // SALES AGGREGATION
   // ----------------------------------
-  const styleSale = {};
-  const styleSizeSale = {};
+  const styleSales = {};
+  const styleSkuSales = {};
 
   sale.forEach(r => {
     const style = r["Style ID"];
     const sku = r["Uniware SKU"];
     const units = Number(r["Units"] || 0);
 
-    styleSale[style] = (styleSale[style] || 0) + units;
+    styleSales[style] = (styleSales[style] || 0) + units;
 
-    if (!styleSizeSale[style]) styleSizeSale[style] = {};
-    styleSizeSale[style][sku] =
-      (styleSizeSale[style][sku] || 0) + units;
+    if (!styleSkuSales[style]) styleSkuSales[style] = {};
+    styleSkuSales[style][sku] =
+      (styleSkuSales[style][sku] || 0) + units;
   });
 
   // ----------------------------------
-  // STOCK AGGREGATION (FC vs SELLER)
+  // STOCK AGGREGATION (FIXED)
   // ----------------------------------
-  const styleSellerStock = {};
   const styleFCStock = {};
-  const styleSizeSellerStock = {};
-  const styleSizeFCStock = {};
+  const styleSellerStock = {};
+  const skuFCStock = {};
+  const skuSellerStock = {};
 
   stock.forEach(r => {
     const style = r["Style ID"];
     const sku = r["Uniware SKU"];
-    const fc = r["FC"];
+    const fc = String(r["FC"] || "").trim().toUpperCase();
     const units = Number(r["Units"] || 0);
 
-    if (fc === "Seller") {
+    if (fc === "SELLER") {
       styleSellerStock[style] =
         (styleSellerStock[style] || 0) + units;
 
-      if (!styleSizeSellerStock[style])
-        styleSizeSellerStock[style] = {};
-      styleSizeSellerStock[style][sku] =
-        (styleSizeSellerStock[style][sku] || 0) + units;
+      if (!skuSellerStock[style]) skuSellerStock[style] = {};
+      skuSellerStock[style][sku] =
+        (skuSellerStock[style][sku] || 0) + units;
     } else {
       styleFCStock[style] =
         (styleFCStock[style] || 0) + units;
 
-      if (!styleSizeFCStock[style])
-        styleSizeFCStock[style] = {};
-      styleSizeFCStock[style][sku] =
-        (styleSizeFCStock[style][sku] || 0) + units;
+      if (!skuFCStock[style]) skuFCStock[style] = {};
+      skuFCStock[style][sku] =
+        (skuFCStock[style][sku] || 0) + units;
     }
   });
 
   // ----------------------------------
-  // BUILD & SORT STYLES
+  // BUILD STYLE LEVEL DATA
   // ----------------------------------
-  const styles = Object.keys(styleSale).map(style => {
-    const sales = styleSale[style];
-    const sellerStock = styleSellerStock[style] || 0;
+  const styles = Object.keys(styleSales).map(style => {
+    const sales = styleSales[style];
     const fcStock = styleFCStock[style] || 0;
+    const sellerStock = styleSellerStock[style] || 0;
+    const totalStock = fcStock + sellerStock;
 
     const drr = sales / totalSaleDays;
-    const sc = drr > 0 ? sellerStock / drr : 0;
+    const sc = drr > 0 ? totalStock / drr : 0;
     const targetStock = drr * 45;
     const demand = Math.max(
       0,
@@ -80,14 +79,16 @@ export function renderDemandReport(data) {
     return {
       style,
       sales,
-      sellerStock,
       fcStock,
+      sellerStock,
+      totalStock,
       drr,
       sc,
       demand
     };
   });
 
+  // Sort by Demand (High → Low)
   styles.sort((a, b) => b.demand - a.demand);
 
   // ----------------------------------
@@ -102,6 +103,7 @@ export function renderDemandReport(data) {
           <th>Sales</th>
           <th>FC Stock</th>
           <th>Seller Stock</th>
+          <th>Total Stock</th>
           <th>DRR</th>
           <th>SC</th>
           <th>Demand</th>
@@ -118,23 +120,26 @@ export function renderDemandReport(data) {
         <td><b>${s.sales}</b></td>
         <td><b>${s.fcStock}</b></td>
         <td><b>${s.sellerStock}</b></td>
+        <td><b>${s.totalStock}</b></td>
         <td><b>${s.drr.toFixed(2)}</b></td>
         <td><b>${s.sc.toFixed(1)}</b></td>
         <td><b>${s.demand}</b></td>
       </tr>
     `;
 
-    const sizeSales = styleSizeSale[s.style] || {};
-    const sizeSellerStocks = styleSizeSellerStock[s.style] || {};
-    const sizeFCStocks = styleSizeFCStock[s.style] || {};
+    const skuSales = styleSkuSales[s.style] || {};
+    const skuFC = skuFCStock[s.style] || {};
+    const skuSeller = skuSellerStock[s.style] || {};
 
-    Object.keys(sizeSales).forEach(sku => {
-      const skuSale = sizeSales[sku];
-      const skuSellerStock = sizeSellerStocks[sku] || 0;
-      const skuFCStock = sizeFCStocks[sku] || 0;
+    Object.keys(skuSales).forEach(sku => {
+      const skuSale = skuSales[sku];
+      const skuFCStock = skuFC[sku] || 0;
+      const skuSellerStock = skuSeller[sku] || 0;
+      const skuTotalStock = skuFCStock + skuSellerStock;
 
       const skuDRR = skuSale / totalSaleDays;
-      const skuSC = skuDRR > 0 ? skuSellerStock / skuDRR : 0;
+      const skuSC = skuDRR > 0 ? skuTotalStock / skuDRR : 0;
+
       const share = skuSale / s.sales;
       const skuDemand = Math.round(s.demand * share);
 
@@ -145,6 +150,7 @@ export function renderDemandReport(data) {
           <td>${skuSale}</td>
           <td>${skuFCStock}</td>
           <td>${skuSellerStock}</td>
+          <td>${skuTotalStock}</td>
           <td>${skuDRR.toFixed(2)}</td>
           <td>${skuSC.toFixed(1)}</td>
           <td>${skuDemand}</td>
@@ -170,7 +176,7 @@ export function renderDemandReport(data) {
       row.querySelector(".toggle").textContent = expanded ? "–" : "+";
 
       container
-        .querySelectorAll(`.size-row[data-parent="${style}"]`)
+        .querySelectorAll(\`.size-row[data-parent="\${style}"]\`)
         .forEach(r => {
           r.style.display = expanded ? "table-row" : "none";
         });
