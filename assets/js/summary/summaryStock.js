@@ -5,6 +5,8 @@
 //
 // DRR = FC Total Units Sold / GLOBAL Total Sale Days
 // SC  = Total Stock / DRR
+//
+// Includes Grand Total row (consolidated calculation)
 // ===================================================
 
 export function renderSummaryStock(data) {
@@ -40,6 +42,17 @@ export function renderSummaryStock(data) {
   });
 
   // -------------------------------
+  // Prepare FC list
+  // -------------------------------
+  const allFCs = new Set([
+    ...Object.keys(saleMap),
+    ...Object.keys(stockMap)
+  ]);
+
+  let grandTotalStock = 0;
+  let grandTotalSales = 0;
+
+  // -------------------------------
   // Build Table HTML
   // -------------------------------
   let html = `
@@ -57,14 +70,12 @@ export function renderSummaryStock(data) {
       <tbody>
   `;
 
-  const allFCs = new Set([
-    ...Object.keys(saleMap),
-    ...Object.keys(stockMap)
-  ]);
-
   allFCs.forEach(fc => {
     const totalStock = stockMap[fc] || 0;
     const totalUnitsSold = saleMap[fc] || 0;
+
+    grandTotalStock += totalStock;
+    grandTotalSales += totalUnitsSold;
 
     const drr =
       totalSaleDays > 0 ? totalUnitsSold / totalSaleDays : 0;
@@ -86,6 +97,29 @@ export function renderSummaryStock(data) {
       </tr>
     `;
   });
+
+  // -------------------------------
+  // Grand Total Row (LOCKED LOGIC)
+  // -------------------------------
+  const grandDRR =
+    totalSaleDays > 0 ? grandTotalSales / totalSaleDays : 0;
+
+  let grandSC = 0;
+  if (grandDRR === 0 && grandTotalStock > 0) {
+    grandSC = "∞";
+  } else if (grandDRR > 0) {
+    grandSC = (grandTotalStock / grandDRR).toFixed(0);
+  }
+
+  html += `
+    <tr style="font-weight:600; background:#f8fafc;">
+      <td>Grand Total</td>
+      <td>${grandTotalStock}</td>
+      <td>${grandTotalSales}</td>
+      <td>${grandDRR.toFixed(2)}</td>
+      <td>${grandSC}</td>
+    </tr>
+  `;
 
   html += `
       </tbody>
