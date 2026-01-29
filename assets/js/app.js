@@ -4,6 +4,7 @@
 
 import { loadAllData } from "./core/fetchData.js";
 import { renderSummarySale } from "./summary/summarySale.js";
+import { renderSummaryStock } from "./summary/summaryStock.js";
 
 async function initApp() {
   try {
@@ -13,9 +14,10 @@ async function initApp() {
     window.APP_DATA = data;
 
     // -------------------------------
-    // Render Summary 1 ONLY
+    // Render Summaries (One by One)
     // -------------------------------
-    renderSummarySale(data);
+    renderSummarySale(data);   // Summary 1
+    renderSummaryStock(data);  // Summary 2
 
     console.log("🚀 Demand Planning App Ready");
   } catch (error) {
