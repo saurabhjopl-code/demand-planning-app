@@ -1,85 +1,71 @@
-// ===================================================
-// Google Sheets Data Loader – STABLE VERSION
-// ===================================================
+// ==========================================
+// Google Sheet Fetch + Header Validation
+// ==========================================
 
-// 🔴 IMPORTANT:
-// Make sure your Google Sheet is PUBLIC:
-// Share → Anyone with link → Viewer
+import { CONFIG } from "../config.js";
 
-const SHEET_ID = "1kGUn-Sdp16NJB9rLjijrYnnSl9Jjrom5ZpYiTXFBZ1E";
+const BASE_URL = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=`;
 
-// Sheet GIDs (DO NOT CHANGE)
-const SHEETS = {
-  sale: "0",
-  stock: "1505539096",
-  styleStatus: "2062234014",
-  saleDays: "1957355061"
-};
+function parseCSV(csvText) {
+  const rows = csvText.trim().split("\n").map(r =>
+    r.split(",").map(v => v.replace(/^"|"$/g, "").trim())
+  );
 
-// Utility: CSV fetch
-async function fetchCSV(gid) {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+  const headers = rows[0];
+  const dataRows = rows.slice(1);
 
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Failed CSV fetch for GID ${gid}`);
-  }
-  return await res.text();
+  return { headers, dataRows };
 }
 
-// Utility: CSV → JSON
-function csvToJSON(csv) {
-  const lines = csv.trim().split("\n");
-  const headers = lines.shift().split(",").map(h => h.trim());
+function validateHeaders(sheetName, actual, expected) {
+  if (
+    actual.length !== expected.length ||
+    actual.some((h, i) => h !== expected[i])
+  ) {
+    throw new Error(`Header validation failed for sheet: ${sheetName}`);
+  }
+}
 
-  return lines.map(line => {
-    const values = line.split(",");
+async function fetchSheet(sheetKey, expectedHeaders) {
+  const sheetName = CONFIG.SHEETS[sheetKey];
+  const url = BASE_URL + encodeURIComponent(sheetName);
+
+  const response = await fetch(url);
+  const csvText = await response.text();
+
+  const { headers, dataRows } = parseCSV(csvText);
+  validateHeaders(sheetName, headers, expectedHeaders);
+
+  return dataRows.map(row => {
     const obj = {};
-    headers.forEach((h, i) => {
-      obj[h] = values[i] ? values[i].trim() : "";
-    });
+    headers.forEach((h, i) => (obj[h] = row[i] || ""));
     return obj;
   });
 }
 
-// ===================================================
-// LOAD ALL DATA
-// ===================================================
 export async function loadAllData() {
-  console.log("📥 Loading Google Sheets data...");
-
-  const [saleCSV, stockCSV, styleCSV, daysCSV] = await Promise.all([
-    fetchCSV(SHEETS.sale),
-    fetchCSV(SHEETS.stock),
-    fetchCSV(SHEETS.styleStatus),
-    fetchCSV(SHEETS.saleDays)
+  const [
+    sale,
+    stock,
+    styleStatus,
+    saleDays
+  ] = await Promise.all([
+    fetchSheet("SALE", CONFIG.EXPECTED_HEADERS.SALE),
+    fetchSheet("STOCK", CONFIG.EXPECTED_HEADERS.STOCK),
+    fetchSheet("STYLE_STATUS", CONFIG.EXPECTED_HEADERS.STYLE_STATUS),
+    fetchSheet("SALE_DAYS", CONFIG.EXPECTED_HEADERS.SALE_DAYS)
   ]);
 
-  const sale = csvToJSON(saleCSV);
-  const stock = csvToJSON(stockCSV);
-  const styleStatus = csvToJSON(styleCSV);
-  const saleDays = csvToJSON(daysCSV);
-
-  // Calculate total sale days (GLOBAL)
   const totalSaleDays = saleDays.reduce(
     (sum, r) => sum + Number(r["Days"] || 0),
     0
   );
 
-  const data = {
+  return {
     sale,
     stock,
     styleStatus,
     saleDays,
     totalSaleDays
   };
-
-  // 🔎 DEBUG PROOF
-  console.log("✅ Data Loaded:");
-  console.log("Sale rows:", sale.length);
-  console.log("Stock rows:", stock.length);
-  console.log("Style rows:", styleStatus.length);
-  console.log("Total Sale Days:", totalSaleDays);
-
-  return data;
 }
