@@ -1,5 +1,5 @@
 // ===================================================
-// Demand Planning App – V1.3.3 (STABLE)
+// Demand Planning App – V1.3.4 (BOOTSTRAP SAFE)
 // ===================================================
 
 // -------- Core --------
@@ -14,15 +14,23 @@ import { renderSummarySize } from "./summary/summarySize.js";
 import { renderSummaryRemark } from "./summary/summaryRemark.js";
 import { renderSummaryCategory } from "./summary/summaryCategory.js";
 
-// -------- Reports (STATIC IMPORTS) --------
+// -------- Reports --------
 import { renderDemandReport } from "./reports/demandReport.js";
-// Future reports will be added here:
-// import { renderOverstockReport } from "./reports/overstockReport.js";
-// import { renderSizeCurveReport } from "./reports/sizeCurveReport.js";
-// import { renderBrokenSizeReport } from "./reports/brokenSizeReport.js";
 
 // ===================================================
 let RAW_DATA = null;
+
+// ===================================================
+// VALIDATION
+// ===================================================
+function validateData(data) {
+  if (!data) return false;
+  if (!Array.isArray(data.sale)) return false;
+  if (!Array.isArray(data.stock)) return false;
+  if (!Array.isArray(data.styleStatus)) return false;
+  if (typeof data.totalSaleDays !== "number") return false;
+  return true;
+}
 
 // ===================================================
 // SUMMARY RENDER
@@ -41,13 +49,10 @@ function renderAllSummaries(filteredData) {
 // ===================================================
 function renderActiveReport(filteredData) {
   const activeTab = document.querySelector(".tabs button.active");
-  if (!activeTab) return;
+  const container = document.querySelector(".tab-content");
+  if (!activeTab || !container) return;
 
   const report = activeTab.dataset.report;
-  const container = document.querySelector(".tab-content");
-
-  if (!container) return;
-
   container.innerHTML = "";
 
   if (report === "demand") {
@@ -96,6 +101,7 @@ function setupDropdown(filterKey, values) {
 // RERENDER PIPELINE
 // ===================================================
 function rerender() {
+  if (!RAW_DATA) return;
   const filteredData = applyFilters(RAW_DATA);
   renderAllSummaries(filteredData);
   renderActiveReport(filteredData);
@@ -115,10 +121,9 @@ function setupTabs() {
     });
   });
 
-  // Default tab = Demand
   if (tabs.length) {
     tabs.forEach(t => t.classList.remove("active"));
-    tabs[0].classList.add("active");
+    tabs[0].classList.add("active"); // Demand default
   }
 }
 
@@ -127,9 +132,17 @@ function setupTabs() {
 // ===================================================
 async function initApp() {
   try {
-    RAW_DATA = await loadAllData();
+    const data = await loadAllData();
 
-    // Filters
+    if (!validateData(data)) {
+      console.error("❌ Invalid data structure:", data);
+      alert("Data structure error. Check console.");
+      return;
+    }
+
+    RAW_DATA = data;
+
+    // ---------------- Filters ----------------
     setupDropdown("Month", [...new Set(RAW_DATA.sale.map(r => r["Month"]))]);
     setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
     setupDropdown(
@@ -141,7 +154,7 @@ async function initApp() {
       [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]
     );
 
-    // Style Search
+    // ---------------- Style Search ----------------
     const styleInput = document.getElementById("style-search");
     const clearBtn = document.getElementById("clear-style-search");
 
@@ -159,9 +172,9 @@ async function initApp() {
     setupTabs();
     rerender();
 
-    console.log("✅ Demand Planning App V1.3.3 Loaded");
+    console.log("✅ Demand Planning App V1.3.4 Loaded Successfully");
   } catch (err) {
-    console.error("❌ App init failed:", err);
+    console.error("❌ loadAllData failed:", err);
     alert("Failed to load data");
   }
 }
