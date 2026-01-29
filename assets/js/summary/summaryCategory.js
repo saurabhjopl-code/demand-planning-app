@@ -1,10 +1,12 @@
 // ===================================================
-// Summary 6: Category-wise Sale
+// Summary 6: Category-wise Sale (FINAL)
 // Table:
-// Category | Total Units Sold | DRR | SC
+// Category | Total Units Sold | DRR | Total Stock | SC
 //
 // DRR = Total Units Sold / GLOBAL Total Sale Days
 // SC  = Total Stock / DRR
+//
+// Sorted by DRR (High → Low)
 // ===================================================
 
 export function renderSummaryCategory(data) {
@@ -74,15 +76,16 @@ export function renderSummaryCategory(data) {
     rows.push({
       category,
       totalUnitsSold,
-      drr: drr.toFixed(2),
+      drr,
+      totalStock,
       sc
     });
   });
 
   // -------------------------------
-  // Sort by Total Units Sold (High → Low)
+  // Sort by DRR High → Low
   // -------------------------------
-  rows.sort((a, b) => b.totalUnitsSold - a.totalUnitsSold);
+  rows.sort((a, b) => b.drr - a.drr);
 
   // -------------------------------
   // Build Table HTML
@@ -95,6 +98,7 @@ export function renderSummaryCategory(data) {
           <th>Category</th>
           <th>Total Units Sold</th>
           <th>DRR</th>
+          <th>Total Stock</th>
           <th>SC</th>
         </tr>
       </thead>
@@ -106,7 +110,8 @@ export function renderSummaryCategory(data) {
       <tr>
         <td>${r.category}</td>
         <td>${r.totalUnitsSold}</td>
-        <td>${r.drr}</td>
+        <td>${r.drr.toFixed(2)}</td>
+        <td>${r.totalStock}</td>
         <td>${r.sc}</td>
       </tr>
     `;
