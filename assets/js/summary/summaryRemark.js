@@ -1,10 +1,9 @@
 // ===================================================
-// Summary 5: Company Remark-wise Sale
+// Summary 5: Company Remark-wise Sale (FINAL)
 // Table:
-// Company Remark | Total Units Sold | DRR | SC
+// Company Remark | Total Units Sold | DRR | Total Stock | SC
 //
-// DRR = Total Units Sold / GLOBAL Total Sale Days
-// SC  = Total Stock / DRR
+// Sorted by business priority (LOCKED ORDER)
 // ===================================================
 
 export function renderSummaryRemark(data) {
@@ -35,8 +34,7 @@ export function renderSummaryRemark(data) {
     const units = Number(row["Units"] || 0);
     const remark = styleRemarkMap[style] || "Blank";
 
-    if (!remarkSaleMap[remark]) remarkSaleMap[remark] = 0;
-    remarkSaleMap[remark] += units;
+    remarkSaleMap[remark] = (remarkSaleMap[remark] || 0) + units;
   });
 
   // -------------------------------
@@ -48,9 +46,22 @@ export function renderSummaryRemark(data) {
     const units = Number(row["Units"] || 0);
     const remark = styleRemarkMap[style] || "Blank";
 
-    if (!remarkStockMap[remark]) remarkStockMap[remark] = 0;
-    remarkStockMap[remark] += units;
+    remarkStockMap[remark] = (remarkStockMap[remark] || 0) + units;
   });
+
+  // -------------------------------
+  // Business Priority Order (LOCKED)
+  // -------------------------------
+  const priorityOrder = [
+    "Diamond A",
+    "Diamond B",
+    "Diamond C",
+    "Platinum A",
+    "Platinum B",
+    "Platinum C",
+    "New Listing",
+    "Closed"
+  ];
 
   // -------------------------------
   // Build Rows
@@ -75,14 +86,24 @@ export function renderSummaryRemark(data) {
       remark,
       totalUnitsSold,
       drr: drr.toFixed(2),
+      totalStock,
       sc
     });
   });
 
   // -------------------------------
-  // Sort by Total Units Sold (High → Low)
+  // Sort by Priority Order
   // -------------------------------
-  rows.sort((a, b) => b.totalUnitsSold - a.totalUnitsSold);
+  rows.sort((a, b) => {
+    const aIndex = priorityOrder.indexOf(a.remark);
+    const bIndex = priorityOrder.indexOf(b.remark);
+
+    if (aIndex === -1 && bIndex === -1) return 0;
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+
+    return aIndex - bIndex;
+  });
 
   // -------------------------------
   // Build Table HTML
@@ -95,6 +116,7 @@ export function renderSummaryRemark(data) {
           <th>Company Remark</th>
           <th>Total Units Sold</th>
           <th>DRR</th>
+          <th>Total Stock</th>
           <th>SC</th>
         </tr>
       </thead>
@@ -107,6 +129,7 @@ export function renderSummaryRemark(data) {
         <td>${r.remark}</td>
         <td>${r.totalUnitsSold}</td>
         <td>${r.drr}</td>
+        <td>${r.totalStock}</td>
         <td>${r.sc}</td>
       </tr>
     `;
