@@ -40,6 +40,27 @@ export function renderSizeCurveReport(data) {
   });
 
   // ===============================
+  // PREPARE STYLE DATA
+  // ===============================
+  const styles = Object.keys(styleSales).map(style => {
+    const totalSales = styleSales[style];
+    const drr = totalSales / totalSaleDays;
+    const demand = Math.max(
+      0,
+      Math.round(drr * 45 - (sellerStock[style] || 0))
+    );
+
+    return {
+      style,
+      totalSales,
+      demand
+    };
+  });
+
+  // Sort by Style Demand High → Low
+  styles.sort((a, b) => b.demand - a.demand);
+
+  // ===============================
   // BUILD TABLE
   // ===============================
   let html = `
@@ -53,21 +74,21 @@ export function renderSizeCurveReport(data) {
     <table class="summary-table">
       <thead>
         <tr>
-          <th>Style</th>
-          <th>Style Demand</th>
+          <th rowspan="2">Style</th>
+          <th rowspan="2">Style Demand</th>
+          <th colspan="${SIZE_ORDER.length}">Recommended Buy (Qty)</th>
+        </tr>
+        <tr>
           ${SIZE_ORDER.map(s => `<th>${s}</th>`).join("")}
         </tr>
       </thead>
       <tbody>
   `;
 
-  Object.keys(styleSales).forEach(style => {
-    const totalSales = styleSales[style];
-    const drr = totalSales / totalSaleDays;
-    const styleDemand = Math.max(
-      0,
-      Math.round(drr * 45 - (sellerStock[style] || 0))
-    );
+  styles.forEach(obj => {
+    const style = obj.style;
+    const styleDemand = obj.demand;
+    const totalSales = obj.totalSales;
 
     html += `
       <tr>
@@ -86,6 +107,10 @@ export function renderSizeCurveReport(data) {
     html += `</tr>`;
   });
 
-  html += `</tbody></table>`;
+  html += `
+      </tbody>
+    </table>
+  `;
+
   container.innerHTML = html;
 }
