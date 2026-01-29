@@ -51,15 +51,50 @@ body {
   cursor: pointer;
 }
 
-.exports button:hover {
-  background: #1d4ed8;
+/* ===============================
+   MAIN
+================================ */
+main {
+  padding: 24px 32px;
 }
 
 /* ===============================
-   MAIN LAYOUT
+   FILTER BAR
 ================================ */
-main {
-  padding: 28px 32px;
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 1.5fr;
+  gap: 16px;
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+.filter-group select,
+.filter-group input {
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+}
+
+.search-group input {
+  background: #ffffff;
 }
 
 /* ===============================
@@ -71,28 +106,16 @@ main {
   gap: 20px;
 }
 
-/* ===============================
-   SUMMARY CARD
-================================ */
 .summary-box {
   background: #ffffff;
   border-radius: 10px;
   padding: 18px 20px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
   min-height: 220px;
-  display: flex;
-  flex-direction: column;
-}
-
-.summary-box h3 {
-  margin: 0 0 14px 0;
-  font-size: 15px;
-  font-weight: 600;
-  text-align: center;
 }
 
 /* ===============================
-   TABLE STYLING
+   TABLES
 ================================ */
 .summary-table {
   width: 100%;
@@ -110,6 +133,18 @@ main {
 
 .summary-table thead {
   background: #f8fafc;
+}
+
+/* ===============================
+   REPORT TABS
+================================ */
+.tabs button {
+  background: #e5e7eb;
+  border: none;
+  padding: 8px 14px;
+  margin-right: 6px;
+  border-radius: 6px;
+  font-size: 13px;
 }
 
 /* ===============================
