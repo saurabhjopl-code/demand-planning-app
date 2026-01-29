@@ -1,7 +1,8 @@
 // ===================================================
 // Summary 1: Sale Details
-// Table: Month | Total Units Sold | Sale Days | DRR
+// Table: Month | Total Units Sold | DRR
 // DRR = Monthly Units / Monthly Sale Days
+// Sale Days NOT shown (calculation only)
 // ===================================================
 
 export function renderSummarySale(data) {
@@ -41,12 +42,11 @@ export function renderSummarySale(data) {
   // -------------------------------
   let html = `
     <h3>Sale Details</h3>
-    <table class="summary-table">
+    <table class="summary-table center">
       <thead>
         <tr>
           <th>Month</th>
           <th>Total Units Sold</th>
-          <th>Sale Days</th>
           <th>DRR</th>
         </tr>
       </thead>
@@ -62,7 +62,6 @@ export function renderSummarySale(data) {
       <tr>
         <td>${month}</td>
         <td>${totalUnits}</td>
-        <td>${days}</td>
         <td>${drr}</td>
       </tr>
     `;
