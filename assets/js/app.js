@@ -1,5 +1,5 @@
 // ===================================================
-// Demand Planning App – V1.3.5 (FILTER SAFE)
+// Demand Planning App – STABLE RECOVERY VERSION
 // ===================================================
 
 // -------- Core --------
@@ -21,37 +21,26 @@ import { renderDemandReport } from "./reports/demandReport.js";
 let RAW_DATA = null;
 
 // ===================================================
-// SAFE FILTER SETTER
-// Empty array = no filter
+// ALWAYS RENDER SUMMARIES FROM RAW DATA (LOCKED)
 // ===================================================
-function safeSetFilter(key, values) {
-  if (!Array.isArray(values) || values.length === 0) {
-    setFilter(key, null); // IMPORTANT FIX
-  } else {
-    setFilter(key, values);
-  }
+function renderAllSummaries() {
+  renderSummarySale(RAW_DATA);
+  renderSummaryStock(RAW_DATA);
+  renderSummarySCBand(RAW_DATA);
+  renderSummarySize(RAW_DATA);
+  renderSummaryRemark(RAW_DATA);
+  renderSummaryCategory(RAW_DATA);
 }
 
 // ===================================================
-// SUMMARY RENDER
+// REPORT RENDER (FILTERED DATA ONLY)
 // ===================================================
-function renderAllSummaries(filteredData) {
-  renderSummarySale(filteredData);
-  renderSummaryStock(filteredData);
-  renderSummarySCBand(filteredData);
-  renderSummarySize(filteredData);
-  renderSummaryRemark(filteredData);
-  renderSummaryCategory(filteredData);
-}
-
-// ===================================================
-// REPORT RENDER
-// ===================================================
-function renderActiveReport(filteredData) {
+function renderActiveReport() {
   const activeTab = document.querySelector(".tabs button.active");
   const container = document.querySelector(".tab-content");
   if (!activeTab || !container) return;
 
+  const filteredData = applyFilters(RAW_DATA);
   container.innerHTML = "";
 
   if (activeTab.dataset.report === "demand") {
@@ -65,7 +54,7 @@ function renderActiveReport(filteredData) {
 }
 
 // ===================================================
-// FILTER DROPDOWNS (SAFE)
+// FILTER DROPDOWNS (NON-BLOCKING)
 // ===================================================
 function setupDropdown(filterKey, values) {
   const dropdown = document.querySelector(`[data-filter="${filterKey}"]`);
@@ -91,19 +80,9 @@ function setupDropdown(filterKey, values) {
     const selected = [...menu.querySelectorAll("input:checked")].map(
       i => i.value
     );
-    safeSetFilter(filterKey, selected);
-    rerender();
+    setFilter(filterKey, selected.length ? selected : null);
+    renderActiveReport();
   });
-}
-
-// ===================================================
-// RERENDER PIPELINE
-// ===================================================
-function rerender() {
-  if (!RAW_DATA) return;
-  const filteredData = applyFilters(RAW_DATA);
-  renderAllSummaries(filteredData);
-  renderActiveReport(filteredData);
 }
 
 // ===================================================
@@ -116,13 +95,13 @@ function setupTabs() {
     tab.addEventListener("click", () => {
       tabs.forEach(t => t.classList.remove("active"));
       tab.classList.add("active");
-      rerender();
+      renderActiveReport();
     });
   });
 
   if (tabs.length) {
     tabs.forEach(t => t.classList.remove("active"));
-    tabs[0].classList.add("active"); // Demand default
+    tabs[0].classList.add("active");
   }
 }
 
@@ -133,7 +112,7 @@ async function initApp() {
   try {
     RAW_DATA = await loadAllData();
 
-    // Filters
+    // ---------- FILTERS ----------
     setupDropdown("Month", [...new Set(RAW_DATA.sale.map(r => r["Month"]))]);
     setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
     setupDropdown(
@@ -145,30 +124,32 @@ async function initApp() {
       [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]
     );
 
-    // Style Search
+    // ---------- STYLE SEARCH ----------
     const styleInput = document.getElementById("style-search");
     const clearBtn = document.getElementById("clear-style-search");
 
     styleInput.addEventListener("input", e => {
       setStyleSearch(e.target.value || null);
-      rerender();
+      renderActiveReport();
     });
 
     clearBtn.addEventListener("click", () => {
       styleInput.value = "";
       setStyleSearch(null);
-      rerender();
+      renderActiveReport();
     });
 
     setupTabs();
-    rerender();
 
-    console.log("✅ Demand Planning App V1.3.5 Loaded (Summaries Restored)");
+    // 🔒 ALWAYS SHOW SUMMARIES
+    renderAllSummaries();
+    renderActiveReport();
+
+    console.log("✅ Demand Planning App – RECOVERED & STABLE");
   } catch (err) {
     console.error("❌ App init failed:", err);
     alert("Failed to load data");
   }
 }
 
-// ===================================================
 initApp();
