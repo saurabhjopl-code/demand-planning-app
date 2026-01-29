@@ -183,6 +183,43 @@ main {
 }
 
 /* ===============================
+   REPORTS (ADDED)
+================================ */
+#reports-section {
+  margin-top: 40px;
+}
+
+.report-tabs {
+  margin-bottom: 12px;
+}
+
+.report-tabs button {
+  padding: 8px 14px;
+  margin-right: 6px;
+  border: none;
+  border-radius: 6px;
+  background: #e5e7eb;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.report-tabs button.active {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* Expand / collapse */
+.style-row {
+  background: #f8fafc;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.size-row {
+  background: #fff;
+}
+
+/* ===============================
    FOOTER
 ================================ */
 footer {
