@@ -3,12 +3,19 @@ export function renderSizeCurveReport(data) {
 
   const sale = data.sale;
   const stock = data.stock;
+  const totalSaleDays = data.totalSaleDays;
+
+  const SIZE_ORDER = [
+    "FS","S","M","L","XL","XXL",
+    "3XL","4XL","5XL","6XL",
+    "7XL","8XL","9XL","10XL"
+  ];
 
   // ===============================
   // SALES BY STYLE & SIZE
   // ===============================
-  const saleByStyleSize = {};
   const styleSales = {};
+  const sizeSales = {};
 
   sale.forEach(r => {
     const style = r["Style ID"];
@@ -17,131 +24,68 @@ export function renderSizeCurveReport(data) {
 
     styleSales[style] = (styleSales[style] || 0) + units;
 
-    if (!saleByStyleSize[style]) saleByStyleSize[style] = {};
-    saleByStyleSize[style][size] =
-      (saleByStyleSize[style][size] || 0) + units;
+    if (!sizeSales[style]) sizeSales[style] = {};
+    sizeSales[style][size] = (sizeSales[style][size] || 0) + units;
   });
 
   // ===============================
-  // STOCK BY STYLE & SIZE
+  // SELLER STOCK BY STYLE
   // ===============================
-  const stockByStyleSize = {};
-  const styleStock = {};
+  const sellerStock = {};
 
   stock.forEach(r => {
+    if (String(r["FC"]).toUpperCase() !== "SELLER") return;
     const style = r["Style ID"];
-    const size = r["Size"];
-    const units = Number(r["Units"] || 0);
-
-    styleStock[style] = (styleStock[style] || 0) + units;
-
-    if (!stockByStyleSize[style]) stockByStyleSize[style] = {};
-    stockByStyleSize[style][size] =
-      (stockByStyleSize[style][size] || 0) + units;
+    sellerStock[style] = (sellerStock[style] || 0) + Number(r["Units"] || 0);
   });
 
   // ===============================
-  // BUILD STYLE DATA
-  // ===============================
-  const styles = Object.keys(styleSales)
-    .map(style => {
-      const totalSales = styleSales[style];
-      const totalStock = styleStock[style] || 0;
-
-      let maxVariance = 0;
-
-      Object.keys(saleByStyleSize[style] || {}).forEach(size => {
-        const saleQty = saleByStyleSize[style][size];
-        const stockQty =
-          (stockByStyleSize[style] || {})[size] || 0;
-
-        const salePct = totalSales ? saleQty / totalSales : 0;
-        const stockPct = totalStock ? stockQty / totalStock : 0;
-        const variance = Math.abs(stockPct - salePct);
-
-        maxVariance = Math.max(maxVariance, variance);
-      });
-
-      return { style, totalSales, totalStock, maxVariance };
-    })
-    .sort((a, b) => b.maxVariance - a.maxVariance);
-
-  // ===============================
-  // RENDER TABLE
+  // BUILD TABLE
   // ===============================
   let html = `
+    <div style="background:#eef2ff;padding:10px 12px;border-left:4px solid #2563eb;margin-bottom:12px;font-size:13px">
+      <b>How to read this</b><br>
+      • Style Demand = units needed to reach target SC (45 Days)<br>
+      • Allocation based on real size sales mix<br>
+      • “FS” means Free Size
+    </div>
+
     <table class="summary-table">
       <thead>
         <tr>
-          <th></th>
-          <th>Style ID / Size</th>
-          <th>Sales</th>
-          <th>Sales %</th>
-          <th>Total Stock</th>
-          <th>Stock %</th>
-          <th>Variance %</th>
+          <th>Style</th>
+          <th>Style Demand</th>
+          ${SIZE_ORDER.map(s => `<th>${s}</th>`).join("")}
         </tr>
       </thead>
       <tbody>
   `;
 
-  styles.forEach(s => {
+  Object.keys(styleSales).forEach(style => {
+    const totalSales = styleSales[style];
+    const drr = totalSales / totalSaleDays;
+    const styleDemand = Math.max(
+      0,
+      Math.round(drr * 45 - (sellerStock[style] || 0))
+    );
+
     html += `
-      <tr class="style-row" data-style="${s.style}">
-        <td class="toggle">+</td>
-        <td>${s.style}</td>
-        <td>${s.totalSales}</td>
-        <td>100%</td>
-        <td>${s.totalStock}</td>
-        <td>100%</td>
-        <td>${(s.maxVariance * 100).toFixed(1)}%</td>
-      </tr>
+      <tr>
+        <td><b>${style}</b></td>
+        <td><b>${styleDemand}</b></td>
     `;
 
-    const sizes = saleByStyleSize[s.style] || {};
-    Object.keys(sizes).forEach(size => {
-      const saleQty = sizes[size];
-      const stockQty =
-        (stockByStyleSize[s.style] || {})[size] || 0;
+    SIZE_ORDER.forEach(size => {
+      const sizeSale = (sizeSales[style] || {})[size] || 0;
+      const mix = totalSales ? sizeSale / totalSales : 0;
+      const recBuy = Math.round(styleDemand * mix);
 
-      const salePct = s.totalSales
-        ? (saleQty / s.totalSales) * 100
-        : 0;
-      const stockPct = s.totalStock
-        ? (stockQty / s.totalStock) * 100
-        : 0;
-
-      html += `
-        <tr class="size-row" data-parent="${s.style}" style="display:none">
-          <td></td>
-          <td>${size}</td>
-          <td>${saleQty}</td>
-          <td>${salePct.toFixed(1)}%</td>
-          <td>${stockQty}</td>
-          <td>${stockPct.toFixed(1)}%</td>
-          <td>${(stockPct - salePct).toFixed(1)}%</td>
-        </tr>
-      `;
+      html += `<td>${recBuy || ""}</td>`;
     });
+
+    html += `</tr>`;
   });
 
   html += `</tbody></table>`;
   container.innerHTML = html;
-
-  // ===============================
-  // EXPAND / COLLAPSE
-  // ===============================
-  container.querySelectorAll(".style-row").forEach(row => {
-    row.onclick = () => {
-      const style = row.dataset.style;
-      const expanded = row.classList.toggle("expanded");
-      row.querySelector(".toggle").textContent = expanded ? "−" : "+";
-
-      container
-        .querySelectorAll(`.size-row[data-parent="${style}"]`)
-        .forEach(r => {
-          r.style.display = expanded ? "table-row" : "none";
-        });
-    };
-  });
 }
