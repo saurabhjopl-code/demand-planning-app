@@ -1,5 +1,5 @@
 // ===================================================
-// Demand Planning App – V1.2.1 (STABLE FIX)
+// Demand Planning App – V1.2.2 (STABLE, NO DYNAMIC IMPORT)
 // ===================================================
 
 // -------- Core --------
@@ -13,6 +13,9 @@ import { renderSummarySCBand } from "./summary/summarySCBand.js";
 import { renderSummarySize } from "./summary/summarySize.js";
 import { renderSummaryRemark } from "./summary/summaryRemark.js";
 import { renderSummaryCategory } from "./summary/summaryCategory.js";
+
+// -------- Reports (STATIC IMPORT) --------
+import { renderDemandReport } from "./reports/demandReport.js";
 
 // ===================================================
 // GLOBAL STATE
@@ -32,27 +35,24 @@ function renderAllSummaries(filteredData) {
 }
 
 // ===================================================
-// REPORT RENDERER (SAFE, DYNAMIC)
+// REPORT RENDERER (STABLE)
 // ===================================================
-async function renderActiveReport(filteredData) {
+function renderActiveReport(filteredData) {
   const activeTab = document.querySelector(".tabs button.active");
   if (!activeTab) return;
 
   const report = activeTab.dataset.report;
   if (!report) return;
 
-  try {
-    if (report === "demand") {
-      const module = await import("./reports/demandReport.js");
-      module.renderDemandReport(filteredData);
-    }
+  const container = document.querySelector(".tab-content");
+  if (!container) return;
 
-    // Future reports (safe placeholders)
-    // else if (report === "overstock") { ... }
+  container.innerHTML = "";
 
-  } catch (err) {
-    console.warn(`⚠️ Report "${report}" not loaded:`, err.message);
-    document.querySelector(".tab-content").innerHTML =
+  if (report === "demand") {
+    renderDemandReport(filteredData);
+  } else {
+    container.innerHTML =
       `<p style="padding:12px;color:#6b7280">
         Report not available yet.
       </p>`;
@@ -60,7 +60,7 @@ async function renderActiveReport(filteredData) {
 }
 
 // ===================================================
-// FILTER DROPDOWNS (CHECKBOX STYLE)
+// FILTER DROPDOWNS
 // ===================================================
 function setupDropdown(filterKey, values) {
   const dropdown = document.querySelector(`[data-filter="${filterKey}"]`);
@@ -114,8 +114,7 @@ function setupTabs() {
     });
   });
 
-  // Default tab = Demand (only if exists)
-  if (tabs.length) tabs[0].classList.add("active");
+  if (tabs.length) tabs[0].classList.add("active"); // Demand default
 }
 
 // ===================================================
@@ -155,7 +154,7 @@ async function initApp() {
     setupTabs();
     rerender();
 
-    console.log("✅ Demand Planning App V1.2.1 Loaded (Stable)");
+    console.log("✅ Demand Planning App V1.2.2 Loaded (Stable)");
   } catch (error) {
     console.error("❌ Init failed:", error);
     alert("Failed to load data");
