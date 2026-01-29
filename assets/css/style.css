@@ -43,12 +43,16 @@ body {
 .exports button {
   background: #2563eb;
   border: none;
-  color: #fff;
+  color: #ffffff;
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 13px;
   margin-left: 8px;
   cursor: pointer;
+}
+
+.exports button:hover {
+  background: #1d4ed8;
 }
 
 /* ===============================
@@ -90,11 +94,33 @@ main {
   font-size: 13px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
-  background: #f9fafb;
+  background: #ffffff;
+  cursor: pointer;
 }
 
-.search-group input {
-  background: #ffffff;
+.filter-group select[multiple] {
+  height: 34px;
+}
+
+.filter-group select:disabled,
+.filter-group input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.search-group input:focus {
+  border-color: #2563eb;
+  outline: none;
+}
+
+/* ===============================
+   SECTION HEADINGS
+================================ */
+#summary-section h2,
+#reports-section h2 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 /* ===============================
@@ -106,21 +132,38 @@ main {
   gap: 20px;
 }
 
+/* ===============================
+   SUMMARY CARD
+================================ */
 .summary-box {
   background: #ffffff;
   border-radius: 10px;
   padding: 18px 20px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
   min-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-box h3 {
+  margin: 0 0 14px 0;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  color: #111827;
 }
 
 /* ===============================
-   TABLES
+   TABLE STYLING
 ================================ */
 .summary-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+}
+
+.summary-table thead {
+  background: #f8fafc;
 }
 
 .summary-table th,
@@ -131,13 +174,17 @@ main {
   vertical-align: middle;
 }
 
-.summary-table thead {
-  background: #f8fafc;
+.summary-table tbody tr:hover {
+  background: #f9fafb;
 }
 
 /* ===============================
    REPORT TABS
 ================================ */
+.tabs {
+  margin-top: 10px;
+}
+
 .tabs button {
   background: #e5e7eb;
   border: none;
@@ -145,6 +192,11 @@ main {
   margin-right: 6px;
   border-radius: 6px;
   font-size: 13px;
+  cursor: pointer;
+}
+
+.tabs button:hover {
+  background: #d1d5db;
 }
 
 /* ===============================
