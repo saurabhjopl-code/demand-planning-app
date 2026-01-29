@@ -89,8 +89,8 @@ export function renderSummarySCBand(data) {
     <table class="summary-table">
       <thead>
         <tr>
-          <th>Band</th>
-          <th>Styles</th>
+          <th>SC Band</th>
+          <th># of Styles</th>
           <th>Total Units Sold</th>
           <th>Total Stock</th>
         </tr>
