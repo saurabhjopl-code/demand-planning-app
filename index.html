@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Demand Planning</title>
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
 
@@ -11,68 +11,63 @@
   <div class="logo">LOGO</div>
   <h1>Demand Planning</h1>
   <div class="exports">
-    <button id="exportSummary">Export Summary</button>
-    <button id="exportFull">Export Full Report</button>
+    <button>Export Summary</button>
+    <button>Export Full Report</button>
   </div>
 </header>
 
 <main>
 
-  <!-- ================= FILTER BAR ================= -->
-  <section class="filter-bar">
-    <div class="filter-group">
-      <label>Month</label>
-      <select id="filter-month" multiple></select>
-    </div>
+<!-- ================= FILTER BAR ================= -->
+<section class="filter-bar">
 
-    <div class="filter-group">
-      <label>FC</label>
-      <select id="filter-fc" multiple></select>
-    </div>
+  <div class="filter-group dropdown" data-filter="Month">
+    <label>Month</label>
+    <div class="dropdown-toggle">Select Month</div>
+    <div class="dropdown-menu"></div>
+  </div>
 
-    <div class="filter-group">
-      <label>Category</label>
-      <select id="filter-category" multiple></select>
-    </div>
+  <div class="filter-group dropdown" data-filter="FC">
+    <label>FC</label>
+    <div class="dropdown-toggle">Select FC</div>
+    <div class="dropdown-menu"></div>
+  </div>
 
-    <div class="filter-group">
-      <label>Company Remark</label>
-      <select id="filter-remark" multiple></select>
-    </div>
+  <div class="filter-group dropdown" data-filter="Category">
+    <label>Category</label>
+    <div class="dropdown-toggle">Select Category</div>
+    <div class="dropdown-menu"></div>
+  </div>
 
-    <div class="filter-group search-group">
-      <label>Style ID Search</label>
-      <input
-        id="style-search"
-        type="text"
-        placeholder="Search Style ID"
-      />
-    </div>
-  </section>
-  <!-- ============================================== -->
+  <div class="filter-group dropdown" data-filter="CompanyRemark">
+    <label>Company Remark</label>
+    <div class="dropdown-toggle">Select Remark</div>
+    <div class="dropdown-menu"></div>
+  </div>
 
-  <section id="summary-section">
-    <h2>Summary</h2>
-    <div class="summary-grid">
-      <div id="summary-1" class="summary-box"></div>
-      <div id="summary-2" class="summary-box"></div>
-      <div id="summary-3" class="summary-box"></div>
-      <div id="summary-4" class="summary-box"></div>
-      <div id="summary-5" class="summary-box"></div>
-      <div id="summary-6" class="summary-box"></div>
+  <div class="filter-group search-group">
+    <label>Style ID Search</label>
+    <div class="search-wrapper">
+      <input id="style-search" type="text" placeholder="Search Style ID" />
+      <span id="clear-style-search">✕</span>
     </div>
-  </section>
+  </div>
 
-  <section id="reports-section">
-    <h2>Reports</h2>
-    <div class="tabs">
-      <button>Demand</button>
-      <button>Overstock</button>
-      <button>Size Curve</button>
-      <button>Broken Size</button>
-    </div>
-    <div class="tab-content"></div>
-  </section>
+</section>
+<!-- ============================================== -->
+
+<section id="summary-section">
+  <h2>Summary</h2>
+  <div class="summary-grid">
+    <div id="summary-1" class="summary-box"></div>
+    <div id="summary-2" class="summary-box"></div>
+    <div id="summary-3" class="summary-box"></div>
+    <div id="summary-4" class="summary-box"></div>
+    <div id="summary-5" class="summary-box"></div>
+    <div id="summary-6" class="summary-box"></div>
+  </div>
+</section>
+
 </main>
 
 <footer>
