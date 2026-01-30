@@ -70,7 +70,9 @@ export function renderDemandReport(data) {
     const total = fc + seller;
 
     const drr = sales / totalSaleDays;
-    const sc = drr ? total / drr : 0;
+
+    // ✅ SC BASED ON SELLER STOCK ONLY
+    const sc = drr ? seller / drr : 0;
 
     // ---------- DIRECT DEMAND ----------
     let directSum = 0;
@@ -101,6 +103,7 @@ export function renderDemandReport(data) {
 
   // ===============================
   // PRIORITY SORT
+  // High DRR, Low SC
   // ===============================
   rows.sort((a, b) => {
     if (b.drr !== a.drr) return b.drr - a.drr;
@@ -167,7 +170,7 @@ export function renderDemandReport(data) {
       const skuTotal = skuFCStock + skuSellerStock;
 
       const skuDRR = skuSale / totalSaleDays;
-      const skuSC = skuDRR ? skuTotal / skuDRR : 0;
+      const skuSC = skuDRR ? skuSellerStock / skuDRR : 0;
       const skuDirect = Math.max(
         0,
         Math.round(skuDRR * 45 - skuSellerStock)
