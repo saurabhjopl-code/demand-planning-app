@@ -1,13 +1,3 @@
-// ===================================================
-// HERO STYLES – Consolidated Month-wise Top 20
-// Version: V2.7 FINAL
-// ===================================================
-// - Top 20 per month (by Sale)
-// - Consolidated (union of all months)
-// - Excel-style column layout
-// - NO expand / collapse
-// ===================================================
-
 export function renderHeroStylesReport(data) {
   const container = document.getElementById("report-content");
   if (!container) return;
@@ -15,40 +5,39 @@ export function renderHeroStylesReport(data) {
 
   const { sale, stock, styleStatus, saleDays } = data;
 
-  // -------------------------------
-  // Month helpers
-  // -------------------------------
-  const monthIndex = {
-    JAN: 1, FEB: 2, MAR: 3, APR: 4,
-    MAY: 5, JUN: 6, JUL: 7, AUG: 8,
-    SEP: 9, OCT: 10, NOV: 11, DEC: 12
+  // ===============================
+  // MONTH PARSER
+  // ===============================
+  const MONTH_INDEX = {
+    JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,
+    JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12
   };
 
   function parseMonth(m) {
     const [mon, yr] = m.split("-");
-    return { year: +yr, month: monthIndex[mon.toUpperCase()] };
+    return { year:+yr, month:MONTH_INDEX[mon.toUpperCase()] };
   }
 
-  // -------------------------------
-  // Closed styles
-  // -------------------------------
+  // ===============================
+  // CLOSED STYLES
+  // ===============================
   const closedStyles = new Set(
     styleStatus
       .filter(r => String(r["Company Remark"]).toUpperCase() === "CLOSED")
       .map(r => r["Style ID"])
   );
 
-  // -------------------------------
-  // Sale Days map
-  // -------------------------------
+  // ===============================
+  // SALE DAYS MAP
+  // ===============================
   const saleDaysMap = {};
   saleDays.forEach(r => {
     saleDaysMap[r["Month"]] = Number(r["Days"] || 1);
   });
 
-  // -------------------------------
-  // Stock & broken count
-  // -------------------------------
+  // ===============================
+  // STOCK AGGREGATION
+  // ===============================
   const stockByStyleSize = {};
   const totalStockMap = {};
 
@@ -68,13 +57,13 @@ export function renderHeroStylesReport(data) {
   });
 
   function getBrokenCount(style) {
-    const sizes = stockByStyleSize[style] || {};
-    return Object.values(sizes).filter(q => q < 10).length;
+    const sizeMap = stockByStyleSize[style] || {};
+    return Object.values(sizeMap).filter(q => q < 10).length;
   }
 
-  // -------------------------------
-  // Sale grouped by Month + Style
-  // -------------------------------
+  // ===============================
+  // SALES BY MONTH + STYLE
+  // ===============================
   const monthStyleSale = {};
   sale.forEach(r => {
     const m = r["Month"];
@@ -86,22 +75,20 @@ export function renderHeroStylesReport(data) {
       (monthStyleSale[m][style] || 0) + Number(r["Units"] || 0);
   });
 
-  // -------------------------------
-  // Sorted months (oldest → newest)
-  // -------------------------------
+  // ===============================
+  // SORTED MONTHS (NEWEST → OLDEST)
+  // ===============================
   const months = Object.keys(monthStyleSale).sort((a, b) => {
     const ma = parseMonth(a);
     const mb = parseMonth(b);
-    return ma.year !== mb.year
-      ? ma.year - mb.year
-      : ma.month - mb.month;
+    return mb.year !== ma.year
+      ? mb.year - ma.year
+      : mb.month - ma.month;
   });
 
-  const latestMonth = months[months.length - 1];
-
-  // -------------------------------
-  // Rank map (Top 20 per month)
-  // -------------------------------
+  // ===============================
+  // RANK MAP (TOP 20 PER MONTH)
+  // ===============================
   const rankMap = {};
   months.forEach(m => {
     rankMap[m] = {};
@@ -110,109 +97,121 @@ export function renderHeroStylesReport(data) {
       .slice(0, 20)
       .forEach(([style, sale], i) => {
         rankMap[m][style] = {
-          sale,
           rank: i + 1,
+          sale,
           drr: sale / (saleDaysMap[m] || 1)
         };
       });
   });
 
-  // -------------------------------
-  // Union of all hero styles
-  // -------------------------------
+  // ===============================
+  // UNION OF ALL HERO STYLES
+  // ===============================
   const heroStyles = new Set();
   months.forEach(m => {
     Object.keys(rankMap[m]).forEach(s => heroStyles.add(s));
   });
 
-  // -------------------------------
+  // ===============================
   // TABLE HEADER
-  // -------------------------------
+  // ===============================
   let html = `
     <table class="summary-table">
       <thead>
         <tr>
           <th rowspan="2">Style ID</th>
-          <th colspan="${months.length}">Sale</th>
-          <th colspan="${months.length}">Rank</th>
-          <th colspan="${months.length}">DRR</th>
-          <th rowspan="2">SC<br>(Latest)</th>
-          <th rowspan="2">Broken<br>Count</th>
-          <th rowspan="2">Remark</th>
-        </tr>
-        <tr>
+          <th rowspan="2">Stock</th>
   `;
 
-  months.forEach(m => html += `<th>${m}</th>`);
-  months.forEach(m => html += `<th>${m}</th>`);
-  months.forEach(m => html += `<th>${m}</th>`);
+  months.forEach(m => {
+    html += `
+      <th colspan="6" class="month-toggle" data-month="${m}" style="cursor:pointer">
+        ${m}
+      </th>`;
+  });
+
+  html += `</tr><tr>`;
+
+  months.forEach(m => {
+    html += `
+      <th class="col-${m}">Rank</th>
+      <th class="col-${m}">Sale</th>
+      <th class="col-${m}">DRR</th>
+      <th class="col-${m}">SC</th>
+      <th class="col-${m}">Broken</th>
+      <th class="col-${m}">Remark</th>
+    `;
+  });
 
   html += `</tr></thead><tbody>`;
 
-  // -------------------------------
+  // ===============================
   // ROWS
-  // -------------------------------
+  // ===============================
   heroStyles.forEach(style => {
     const broken = getBrokenCount(style);
+    const stockQty = totalStockMap[style] || 0;
 
-    // Latest month metrics
-    const latest = rankMap[latestMonth][style];
-    const sc =
-      latest && latest.drr
-        ? (totalStockMap[style] / latest.drr).toFixed(1)
-        : "";
+    html += `<tr><td><b>${style}</b></td><td>${stockQty}</td>`;
 
-    // Remark logic (priority)
-    let remark = "";
-    let color = "";
+    months.forEach((m, idx) => {
+      const cur = rankMap[m][style];
+      const prev = rankMap[months[idx + 1]]?.[style];
 
-    for (let i = months.length - 1; i > 0; i--) {
-      const cur = rankMap[months[i]][style];
-      const prev = rankMap[months[i - 1]][style];
+      const saleQty = cur ? cur.sale : 0;
+      const drr = cur ? cur.drr : 0;
+      const sc = drr ? (stockQty / drr).toFixed(1) : "";
 
-      if (cur && !prev) {
+      let remark = "";
+      let color = "";
+
+      if (cur && !prev && idx < months.length - 1) {
         remark = "New Addition";
         color = "#d97706";
-        break;
-      }
-      if (cur && prev) {
+      } else if (cur && prev) {
         if (cur.drr < prev.drr) {
           remark = "DRR Dropped";
           color = "#dc2626";
-          break;
-        }
-        if (cur.rank > prev.rank) {
+        } else if (cur.rank > prev.rank) {
           remark = "Rank Dropped";
           color = "#dc2626";
-          break;
-        }
-        if (cur.rank < prev.rank) {
+        } else if (cur.rank < prev.rank) {
           remark = "Rank Improved";
           color = "#16a34a";
-          break;
         }
       }
-    }
 
-    html += `<tr><td><b>${style}</b></td>`;
+      html += `
+        <td class="col-${m}">${cur ? cur.rank : "—"}</td>
+        <td class="col-${m}">${saleQty}</td>
+        <td class="col-${m}">${drr ? drr.toFixed(2) : "0.00"}</td>
+        <td class="col-${m}">${sc}</td>
+        <td class="col-${m}">${broken}</td>
+        <td class="col-${m}" style="color:${color};font-weight:600">
+          ${remark}
+        </td>
+      `;
+    });
 
-    months.forEach(m => {
-      html += `<td>${rankMap[m][style]?.sale || ""}</td>`;
-    });
-    months.forEach(m => {
-      html += `<td>${rankMap[m][style]?.rank || ""}</td>`;
-    });
-    months.forEach(m => {
-      html += `<td>${rankMap[m][style]?.drr?.toFixed(2) || ""}</td>`;
-    });
-
-    html += `
-      <td>${sc}</td>
-      <td>${broken}</td>
-      <td style="color:${color};font-weight:600">${remark}</td>
-    </tr>`;
+    html += `</tr>`;
   });
 
   html += `</tbody></table>`;
   container.innerHTML = html;
+
+  // ===============================
+  // SINGLE MONTH TOGGLE
+  // ===============================
+  function showMonth(target) {
+    months.forEach(m => {
+      document.querySelectorAll(`.col-${m}`).forEach(c => {
+        c.style.display = m === target ? "" : "none";
+      });
+    });
+  }
+
+  showMonth(months[0]);
+  document.querySelectorAll(".month-toggle").forEach(th => {
+    th.onclick = () => showMonth(th.dataset.month);
+  });
 }
