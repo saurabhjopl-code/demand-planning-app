@@ -24,29 +24,38 @@ function renderAll(data) {
   renderSummaryCategory(data);
 }
 
+function getActiveReportButton() {
+  let active = document.querySelector(".report-tabs button.active");
+
+  // 🔑 FORCE DEFAULT ACTIVE TAB
+  if (!active) {
+    active = document.querySelector('.report-tabs button[data-report="demand"]');
+    if (active) active.classList.add("active");
+  }
+
+  return active;
+}
+
 function renderReport(data) {
-  const active = document.querySelector(".report-tabs button.active");
+  const active = getActiveReportButton();
   const container = document.getElementById("report-content");
   if (!active || !container) return;
 
   container.innerHTML = "";
 
-  switch (active.dataset.report) {
-    case "demand":
-      renderDemandReport(data);
-      break;
-    case "overstock":
-      renderOverstockReport(data);
-      break;
-    case "sizecurve":
-      renderSizeCurveReport(data);
-      break;
-    case "brokensize":
-      renderBrokenSizeReport(data);
-      break;
-    default:
-      container.innerHTML =
-        `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
+  const report = active.dataset.report;
+
+  if (report === "demand") {
+    renderDemandReport(data);
+  } else if (report === "overstock") {
+    renderOverstockReport(data);
+  } else if (report === "sizecurve") {
+    renderSizeCurveReport(data);
+  } else if (report === "brokensize") {
+    renderBrokenSizeReport(data);
+  } else {
+    container.innerHTML =
+      `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
   }
 }
 
@@ -104,7 +113,7 @@ async function init() {
   );
   setupDropdown(
     "CompanyRemark",
-    [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]
+    [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"])))]
   );
 
   const styleInput = document.getElementById("style-search");
@@ -123,7 +132,7 @@ async function init() {
 
   setupReportTabs();
 
-  // 🔑 FORCE INITIAL REPORT RENDER
+  // 🔑 GUARANTEED FIRST RENDER
   rerender();
 }
 
