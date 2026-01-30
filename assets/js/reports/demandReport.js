@@ -72,7 +72,7 @@ export function renderDemandReport(data) {
     const drr = sales / totalSaleDays;
     const sc = drr ? total / drr : 0;
 
-    // ---------- DIRECT DEMAND (STYLE SUM) ----------
+    // ---------- DIRECT DEMAND ----------
     let directSum = 0;
     Object.keys(skuSales[style] || {}).forEach(sku => {
       const skuSale = skuSales[style][sku];
@@ -85,7 +85,6 @@ export function renderDemandReport(data) {
       directSum += skuDirect;
     });
 
-    // Visibility rule
     if (directSum === 0) return;
 
     rows.push({
@@ -102,12 +101,20 @@ export function renderDemandReport(data) {
 
   // ===============================
   // PRIORITY SORT
-  // High DRR, Low SC
   // ===============================
   rows.sort((a, b) => {
     if (b.drr !== a.drr) return b.drr - a.drr;
     return a.sc - b.sc;
   });
+
+  // ===============================
+  // BUY BUCKET HELPER
+  // ===============================
+  function getBucket(sc) {
+    if (sc < 15) return { label: "Urgent", color: "#dc2626" };
+    if (sc <= 30) return { label: "Medium", color: "#d97706" };
+    return { label: "Low", color: "#16a34a" };
+  }
 
   // ===============================
   // RENDER TABLE
@@ -126,12 +133,15 @@ export function renderDemandReport(data) {
           <th>DRR</th>
           <th>SC</th>
           <th>Direct Demand</th>
+          <th>Buy Bucket</th>
         </tr>
       </thead>
       <tbody>
   `;
 
   rows.forEach((r, idx) => {
+    const bucket = getBucket(r.sc);
+
     html += `
       <tr class="style-row" data-style="${r.style}">
         <td class="toggle">+</td>
@@ -144,6 +154,9 @@ export function renderDemandReport(data) {
         <td>${r.drr.toFixed(2)}</td>
         <td>${r.sc.toFixed(1)}</td>
         <td><b>${r.direct}</b></td>
+        <td style="color:${bucket.color};font-weight:700">
+          ${bucket.label}
+        </td>
       </tr>
     `;
 
@@ -155,11 +168,12 @@ export function renderDemandReport(data) {
 
       const skuDRR = skuSale / totalSaleDays;
       const skuSC = skuDRR ? skuTotal / skuDRR : 0;
-
       const skuDirect = Math.max(
         0,
         Math.round(skuDRR * 45 - skuSellerStock)
       );
+
+      const skuBucket = getBucket(skuSC);
 
       html += `
         <tr class="size-row" data-parent="${r.style}" style="display:none">
@@ -173,6 +187,9 @@ export function renderDemandReport(data) {
           <td>${skuDRR.toFixed(2)}</td>
           <td>${skuSC.toFixed(1)}</td>
           <td>${skuDirect}</td>
+          <td style="color:${skuBucket.color};font-weight:600">
+            ${skuBucket.label}
+          </td>
         </tr>
       `;
     });
