@@ -1,5 +1,5 @@
 // ================================
-// Global Configuration (LOCKED)
+// Global Configuration (LOCKED + EXTENDED SAFELY)
 // ================================
 
 export const CONFIG = {
@@ -10,7 +10,7 @@ export const CONFIG = {
     STOCK: "Stock",
     STYLE_STATUS: "Style Status",
     SALE_DAYS: "Sale Days",
-    SIZE_COUNT: "Size Count" // ✅ ADDED
+    SIZE_COUNT: "Size Count" // ✅ ADDED (SAFE)
   },
 
   EXPECTED_HEADERS: {
@@ -49,6 +49,6 @@ export const CONFIG = {
     SIZE_COUNT: [
       "Style ID",
       "Size Count"
-    ] // ✅ ADDED
+    ]
   }
 };
