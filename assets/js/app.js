@@ -31,29 +31,34 @@ function renderReport(data) {
 
   container.innerHTML = "";
 
-  if (active.dataset.report === "demand") {
-    renderDemandReport(data);
-  } else if (active.dataset.report === "overstock") {
-    renderOverstockReport(data);
-  } else if (active.dataset.report === "sizecurve") {
-    renderSizeCurveReport(data);
-  } else if (active.dataset.report === "brokensize") {
-    renderBrokenSizeReport(data);
-  } else {
-    container.innerHTML =
-      `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
+  switch (active.dataset.report) {
+    case "demand":
+      renderDemandReport(data);
+      break;
+    case "overstock":
+      renderOverstockReport(data);
+      break;
+    case "sizecurve":
+      renderSizeCurveReport(data);
+      break;
+    case "brokensize":
+      renderBrokenSizeReport(data);
+      break;
+    default:
+      container.innerHTML =
+        `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
   }
 }
 
 function setupReportTabs() {
-  document.querySelectorAll(".report-tabs button").forEach(btn => {
-    btn.onclick = () => {
-      document
-        .querySelectorAll(".report-tabs button")
-        .forEach(b => b.classList.remove("active"));
+  const tabs = document.querySelectorAll(".report-tabs button");
+
+  tabs.forEach(btn => {
+    btn.addEventListener("click", () => {
+      tabs.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       renderReport(applyFilters(RAW_DATA));
-    };
+    });
   });
 }
 
@@ -117,6 +122,8 @@ async function init() {
   };
 
   setupReportTabs();
+
+  // 🔑 FORCE INITIAL REPORT RENDER
   rerender();
 }
 
