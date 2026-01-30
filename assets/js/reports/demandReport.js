@@ -72,9 +72,7 @@ export function renderDemandReport(data) {
     const drr = sales / totalSaleDays;
     const sc = drr ? total / drr : 0;
 
-    const allocated = Math.max(0, Math.round(drr * 45 - seller));
-
-    // ---------- DIRECT DEMAND SUM ----------
+    // ---------- DIRECT DEMAND (STYLE SUM) ----------
     let directSum = 0;
     Object.keys(skuSales[style] || {}).forEach(sku => {
       const skuSale = skuSales[style][sku];
@@ -87,8 +85,8 @@ export function renderDemandReport(data) {
       directSum += skuDirect;
     });
 
-    // ---------- VISIBILITY RULE ----------
-    if (allocated === 0 && directSum === 0) return;
+    // Visibility rule
+    if (directSum === 0) return;
 
     rows.push({
       style,
@@ -98,7 +96,6 @@ export function renderDemandReport(data) {
       total,
       drr,
       sc,
-      allocated,
       direct: directSum
     });
   });
@@ -128,31 +125,15 @@ export function renderDemandReport(data) {
           <th>Total Stock</th>
           <th>DRR</th>
           <th>SC</th>
-          <th>Allocated</th>
-          <th>Direct</th>
-          <th>Deviation %</th>
-          <th>Risk</th>
+          <th>Direct Demand</th>
         </tr>
       </thead>
       <tbody>
   `;
 
   rows.forEach((r, idx) => {
-    const deviation = r.allocated
-      ? ((r.direct - r.allocated) / r.allocated) * 100
-      : 0;
-
-    const risk =
-      r.direct > r.allocated ? "Overbuy" :
-      r.direct < r.allocated ? "Underbuy" : "Balanced";
-
-    const highlight =
-      r.direct > r.allocated * 1.25
-        ? "style='background:#fee2e2'"
-        : "";
-
     html += `
-      <tr class="style-row" data-style="${r.style}" ${highlight}>
+      <tr class="style-row" data-style="${r.style}">
         <td class="toggle">+</td>
         <td>${idx + 1}</td>
         <td><b>${r.style}</b></td>
@@ -162,10 +143,7 @@ export function renderDemandReport(data) {
         <td>${r.total}</td>
         <td>${r.drr.toFixed(2)}</td>
         <td>${r.sc.toFixed(1)}</td>
-        <td>${r.allocated}</td>
-        <td>${r.direct}</td>
-        <td>${deviation.toFixed(1)}%</td>
-        <td><b>${risk}</b></td>
+        <td><b>${r.direct}</b></td>
       </tr>
     `;
 
@@ -183,9 +161,6 @@ export function renderDemandReport(data) {
         Math.round(skuDRR * 45 - skuSellerStock)
       );
 
-      const share = skuSale / r.sales;
-      const skuAllocated = Math.round(r.allocated * share);
-
       html += `
         <tr class="size-row" data-parent="${r.style}" style="display:none">
           <td></td>
@@ -197,10 +172,7 @@ export function renderDemandReport(data) {
           <td>${skuTotal}</td>
           <td>${skuDRR.toFixed(2)}</td>
           <td>${skuSC.toFixed(1)}</td>
-          <td>${skuAllocated}</td>
           <td>${skuDirect}</td>
-          <td></td>
-          <td></td>
         </tr>
       `;
     });
