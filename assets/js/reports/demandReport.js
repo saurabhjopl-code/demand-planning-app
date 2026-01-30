@@ -61,7 +61,9 @@ export function renderDemandReport(data) {
   // ===============================
   // STYLE LEVEL CALCULATION
   // ===============================
-  let rows = Object.keys(styleSales).map(style => {
+  let rows = [];
+
+  Object.keys(styleSales).forEach(style => {
     const sales = styleSales[style];
     const fc = styleFC[style] || 0;
     const seller = styleSeller[style] || 0;
@@ -72,7 +74,23 @@ export function renderDemandReport(data) {
 
     const allocated = Math.max(0, Math.round(drr * 45 - seller));
 
-    return {
+    // ---------- DIRECT DEMAND SUM ----------
+    let directSum = 0;
+    Object.keys(skuSales[style] || {}).forEach(sku => {
+      const skuSale = skuSales[style][sku];
+      const skuSellerStock = (skuSeller[style] || {})[sku] || 0;
+      const skuDRR = skuSale / totalSaleDays;
+      const skuDirect = Math.max(
+        0,
+        Math.round(skuDRR * 45 - skuSellerStock)
+      );
+      directSum += skuDirect;
+    });
+
+    // ---------- VISIBILITY RULE ----------
+    if (allocated === 0 && directSum === 0) return;
+
+    rows.push({
       style,
       sales,
       fc,
@@ -80,12 +98,14 @@ export function renderDemandReport(data) {
       total,
       drr,
       sc,
-      allocated
-    };
-  }).filter(r => r.allocated > 0);
+      allocated,
+      direct: directSum
+    });
+  });
 
   // ===============================
   // PRIORITY SORT
+  // High DRR, Low SC
   // ===============================
   rows.sort((a, b) => {
     if (b.drr !== a.drr) return b.drr - a.drr;
@@ -96,48 +116,40 @@ export function renderDemandReport(data) {
   // RENDER TABLE
   // ===============================
   let html = `
-  <table class="summary-table">
-    <thead>
-      <tr>
-        <th></th>
-        <th>Priority</th>
-        <th>Style ID / SKU</th>
-        <th>Sales</th>
-        <th>FC Stock</th>
-        <th>Seller Stock</th>
-        <th>Total Stock</th>
-        <th>DRR</th>
-        <th>SC</th>
-        <th>Allocated</th>
-        <th>Direct</th>
-        <th>Deviation %</th>
-        <th>Risk</th>
-      </tr>
-    </thead>
-    <tbody>
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Priority</th>
+          <th>Style ID / SKU</th>
+          <th>Sales</th>
+          <th>FC Stock</th>
+          <th>Seller Stock</th>
+          <th>Total Stock</th>
+          <th>DRR</th>
+          <th>SC</th>
+          <th>Allocated</th>
+          <th>Direct</th>
+          <th>Deviation %</th>
+          <th>Risk</th>
+        </tr>
+      </thead>
+      <tbody>
   `;
 
   rows.forEach((r, idx) => {
-    let directSum = 0;
-
-    Object.keys(skuSales[r.style] || {}).forEach(sku => {
-      const skuSale = skuSales[r.style][sku];
-      const skuSellerStock = (skuSeller[r.style] || {})[sku] || 0;
-      const skuDRR = skuSale / totalSaleDays;
-      const direct = Math.max(0, Math.round(skuDRR * 45 - skuSellerStock));
-      directSum += direct;
-    });
-
     const deviation = r.allocated
-      ? ((directSum - r.allocated) / r.allocated) * 100
+      ? ((r.direct - r.allocated) / r.allocated) * 100
       : 0;
 
     const risk =
-      directSum > r.allocated ? "Overbuy" :
-      directSum < r.allocated ? "Underbuy" : "Balanced";
+      r.direct > r.allocated ? "Overbuy" :
+      r.direct < r.allocated ? "Underbuy" : "Balanced";
 
     const highlight =
-      directSum > r.allocated * 1.25 ? "style='background:#fee2e2'" : "";
+      r.direct > r.allocated * 1.25
+        ? "style='background:#fee2e2'"
+        : "";
 
     html += `
       <tr class="style-row" data-style="${r.style}" ${highlight}>
@@ -151,7 +163,7 @@ export function renderDemandReport(data) {
         <td>${r.drr.toFixed(2)}</td>
         <td>${r.sc.toFixed(1)}</td>
         <td>${r.allocated}</td>
-        <td>${directSum}</td>
+        <td>${r.direct}</td>
         <td>${deviation.toFixed(1)}%</td>
         <td><b>${risk}</b></td>
       </tr>
@@ -207,7 +219,7 @@ export function renderDemandReport(data) {
       row.querySelector(".toggle").textContent = expanded ? "−" : "+";
 
       container
-        .querySelectorAll(\`.size-row[data-parent="\${style}"]\`)
+        .querySelectorAll(`.size-row[data-parent="${style}"]`)
         .forEach(r => {
           r.style.display = expanded ? "table-row" : "none";
         });
