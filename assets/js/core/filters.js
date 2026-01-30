@@ -1,5 +1,5 @@
 // ===================================================
-// Global Filter Engine (LOCKED)
+// Global Filter Engine (LOCKED + FIXED)
 // Filters apply to Summaries + Reports
 // Style ID works as SEARCH override
 // ===================================================
@@ -24,13 +24,6 @@ export function setStyleSearch(value) {
 }
 
 // -------------------------------
-// Get Current Filters (Read-only)
-// -------------------------------
-export function getFilterState() {
-  return JSON.parse(JSON.stringify(FILTER_STATE));
-}
-
-// -------------------------------
 // Core Filter Application
 // -------------------------------
 export function applyFilters(rawData) {
@@ -39,6 +32,7 @@ export function applyFilters(rawData) {
     stock,
     styleStatus,
     saleDays,
+    sizeCount,       // ✅ PRESERVE
     totalSaleDays
   } = rawData;
 
@@ -48,23 +42,12 @@ export function applyFilters(rawData) {
   if (FILTER_STATE.StyleSearch) {
     const styleId = FILTER_STATE.StyleSearch;
 
-    const filteredSale = sale.filter(
-      r => r["Style ID"] === styleId
-    );
-
-    const filteredStock = stock.filter(
-      r => r["Style ID"] === styleId
-    );
-
-    const filteredStyleStatus = styleStatus.filter(
-      r => r["Style ID"] === styleId
-    );
-
     return {
-      sale: filteredSale,
-      stock: filteredStock,
-      styleStatus: filteredStyleStatus,
+      sale: sale.filter(r => r["Style ID"] === styleId),
+      stock: stock.filter(r => r["Style ID"] === styleId),
+      styleStatus: styleStatus.filter(r => r["Style ID"] === styleId),
       saleDays,
+      sizeCount,     // ✅ PRESERVE
       totalSaleDays
     };
   }
@@ -83,7 +66,7 @@ export function applyFilters(rawData) {
   // -------------------------------
   // Apply Sale Filters
   // -------------------------------
-  let filteredSale = sale.filter(r => {
+  const filteredSale = sale.filter(r => {
     if (
       FILTER_STATE.Month.length &&
       !FILTER_STATE.Month.includes(r["Month"])
@@ -112,7 +95,7 @@ export function applyFilters(rawData) {
   // -------------------------------
   // Apply Stock Filters
   // -------------------------------
-  let filteredStock = stock.filter(r => {
+  const filteredStock = stock.filter(r => {
     if (
       FILTER_STATE.FC.length &&
       !FILTER_STATE.FC.includes(r["FC"])
@@ -138,6 +121,7 @@ export function applyFilters(rawData) {
     stock: filteredStock,
     styleStatus,
     saleDays,
+    sizeCount,     // ✅ PRESERVE
     totalSaleDays
   };
 }
