@@ -1,7 +1,12 @@
 // ===================================================
-// HERO STYLES – Month-wise Top 20 (Columns, Expand/Collapse)
-// Version: V2.6.1 (Brokenness Restored)
-// Built on V2.5 STABLE
+// HERO STYLES – Month-wise Top 20
+// Version: V2.6.2 (Single Month Expand UX)
+// ===================================================
+// - Months as column groups
+// - ONLY ONE month visible at a time
+// - Newest month open by default
+// - Clicking a month collapses all others
+// - Calculations unchanged
 // ===================================================
 
 export function renderHeroStylesReport(data) {
@@ -43,7 +48,7 @@ export function renderHeroStylesReport(data) {
   });
 
   // -------------------------------
-  // Stock by Style & Size (for Brokenness)
+  // Stock by Style & Size
   // -------------------------------
   const stockByStyleSize = {};
   const totalStockMap = {};
@@ -63,12 +68,9 @@ export function renderHeroStylesReport(data) {
       (totalStockMap[style] || 0) + units;
   });
 
-  // -------------------------------
-  // Brokenness Count
-  // -------------------------------
   function getBrokenCount(style) {
     const sizeMap = stockByStyleSize[style] || {};
-    return Object.values(sizeMap).filter(qty => qty < 10).length;
+    return Object.values(sizeMap).filter(q => q < 10).length;
   }
 
   // -------------------------------
@@ -97,7 +99,7 @@ export function renderHeroStylesReport(data) {
   });
 
   // -------------------------------
-  // Rank map per month (Top 20 only)
+  // Rank map per month (Top 20)
   // -------------------------------
   const rankMap = {};
   months.forEach(m => {
@@ -115,7 +117,7 @@ export function renderHeroStylesReport(data) {
   });
 
   // -------------------------------
-  // Union of all Hero Styles
+  // Union of all hero styles
   // -------------------------------
   const heroStyles = new Set();
   months.forEach(m => {
@@ -215,25 +217,23 @@ export function renderHeroStylesReport(data) {
   container.innerHTML = html;
 
   // -------------------------------
-  // Expand / Collapse Logic
+  // SINGLE-MONTH EXPAND LOGIC
   // -------------------------------
-  months.forEach((m, i) => {
-    if (i !== 0) {
-      document
-        .querySelectorAll(`.col-${m}`)
-        .forEach(c => (c.style.display = "none"));
-    }
-  });
+  function showMonth(targetMonth) {
+    months.forEach(m => {
+      document.querySelectorAll(`.col-${m}`).forEach(c => {
+        c.style.display = m === targetMonth ? "" : "none";
+      });
+    });
+  }
 
+  // Default: newest month open
+  showMonth(months[0]);
+
+  // Click behavior: open one, close others
   document.querySelectorAll(".month-toggle").forEach(th => {
     th.onclick = () => {
-      const m = th.dataset.month;
-      document
-        .querySelectorAll(`.col-${m}`)
-        .forEach(c => {
-          c.style.display =
-            c.style.display === "none" ? "" : "none";
-        });
+      showMonth(th.dataset.month);
     };
   });
 }
