@@ -1,13 +1,13 @@
 // ===================================================
 // HERO STYLES REPORT – FLAT EXCEL FORMAT
-// Version: V3.1 (FINAL, STABLE)
+// Version: V3.1.1 (TOP-20 FIXED)
 // ===================================================
-// - Flat columns (NO colspan, NO expand)
-// - Sale shown for ALL months (0 if no sale)
-// - Rank only if in Top-20 of that month
+// - ONLY styles appearing in Top-20 of ANY month
+// - Sale shown for all months (0 if no sale)
+// - Rank only if in Top-20
 // - DRR month-wise using Sale Days
 // - SC only for latest month
-// - Broken Count from stock (<10 units per size)
+// - Broken Count (<10 units per size)
 // - Closed styles excluded
 // ===================================================
 
@@ -87,11 +87,13 @@ export function renderHeroStylesReport(data) {
   });
 
   // -------------------------------
-  // UNION OF HERO STYLES
+  // ✅ HERO STYLES = UNION OF TOP-20 ONLY
   // -------------------------------
   const heroStyles = new Set();
   months.forEach(m => {
-    Object.keys(saleMap[m] || {}).forEach(s => heroStyles.add(s));
+    Object.keys(rankMap[m]).forEach(style => {
+      heroStyles.add(style);
+    });
   });
 
   // -------------------------------
@@ -120,7 +122,7 @@ export function renderHeroStylesReport(data) {
   }
 
   // -------------------------------
-  // BUILD TABLE
+  // TABLE HEADER
   // -------------------------------
   let html = `
     <table class="summary-table">
@@ -140,7 +142,6 @@ export function renderHeroStylesReport(data) {
   months.forEach(m => (html += `<th>${m}</th>`));
   months.forEach(m => (html += `<th>${m}</th>`));
   months.forEach(m => (html += `<th>${m}</th>`));
-
   html += `</tr></thead><tbody>`;
 
   // -------------------------------
@@ -149,12 +150,12 @@ export function renderHeroStylesReport(data) {
   [...heroStyles].forEach(style => {
     html += `<tr><td><b>${style}</b></td>`;
 
-    // SALE
+    // Sale
     months.forEach(m => {
       html += `<td>${saleMap[m]?.[style] || 0}</td>`;
     });
 
-    // RANK
+    // Rank
     months.forEach(m => {
       html += `<td>${rankMap[m]?.[style] || ""}</td>`;
     });
@@ -166,21 +167,20 @@ export function renderHeroStylesReport(data) {
       html += `<td>${drr ? drr.toFixed(2) : "0.00"}</td>`;
     });
 
-    // SC (LATEST)
+    // SC (latest)
     const latestSale = saleMap[latestMonth]?.[style] || 0;
     const latestDRR =
       latestSale / (saleDaysMap[latestMonth] || 1);
     const sc =
       latestDRR ? (totalStock[style] || 0) / latestDRR : 0;
 
-    // REMARK (PRIORITY BASED)
+    // Remark logic
     let remark = "";
     let color = "";
 
     const idx = months.length - 1;
     const curRank = rankMap[months[idx]]?.[style];
     const prevRank = rankMap[months[idx - 1]]?.[style];
-    const curDRR = latestDRR;
     const prevSale = saleMap[months[idx - 1]]?.[style] || 0;
     const prevDRR =
       prevSale / (saleDaysMap[months[idx - 1]] || 1);
@@ -188,7 +188,7 @@ export function renderHeroStylesReport(data) {
     if (curRank && !prevRank) {
       remark = "New Addition";
       color = "#d97706";
-    } else if (curDRR < prevDRR) {
+    } else if (latestDRR < prevDRR) {
       remark = "DRR Dropped";
       color = "#dc2626";
     } else if (curRank && prevRank && curRank > prevRank) {
@@ -203,8 +203,7 @@ export function renderHeroStylesReport(data) {
       <td>${sc.toFixed(1)}</td>
       <td>${brokenCount(style)}</td>
       <td style="color:${color};font-weight:600">${remark}</td>
-    </tr>
-    `;
+    </tr>`;
   });
 
   html += `</tbody></table>`;
