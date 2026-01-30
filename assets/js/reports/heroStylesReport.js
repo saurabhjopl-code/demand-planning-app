@@ -1,17 +1,16 @@
 // ===================================================
-// HERO STYLES – Month-wise Top 20 (V2.6 STABLE)
+// HERO STYLES – Month-wise Top 20 (V2.6)
 // ===================================================
-// Rank: Based ONLY on Total Sale
-// Compare with Immediate Previous Month
-// Closed styles excluded
-// Brokenness from Size Count logic
-// Expand / Collapse Month-wise
+// Month order: Newest → Oldest
+// Rank: Total Sale DESC (per month)
+// DRR: Month Sale / Month Days
+// SC: Current Stock / Month DRR
+// Remarks: MoM comparison
 // ===================================================
 
 export function renderHeroStylesReport(data) {
   const container = document.getElementById("report-content");
   if (!container) return;
-
   container.innerHTML = "";
 
   const {
@@ -19,8 +18,22 @@ export function renderHeroStylesReport(data) {
     stock,
     styleStatus,
     sizeCount,
-    totalSaleDays
+    saleDays
   } = data;
+
+  // -------------------------------
+  // Helpers
+  // -------------------------------
+  const monthIndex = {
+    JAN: 1, FEB: 2, MAR: 3, APR: 4,
+    MAY: 5, JUN: 6, JUL: 7, AUG: 8,
+    SEP: 9, OCT: 10, NOV: 11, DEC: 12
+  };
+
+  function parseMonth(m) {
+    const [mon, yr] = m.split("-");
+    return { year: Number(yr), month: monthIndex[mon.toUpperCase()] };
+  }
 
   // -------------------------------
   // Closed Styles
@@ -32,11 +45,11 @@ export function renderHeroStylesReport(data) {
   );
 
   // -------------------------------
-  // Size Count Map
+  // Sale Days Map
   // -------------------------------
-  const sizeCountMap = {};
-  sizeCount.forEach(r => {
-    sizeCountMap[r["Style ID"]] = Number(r["Size Count"] || 0);
+  const saleDaysMap = {};
+  saleDays.forEach(r => {
+    saleDaysMap[r["Month"]] = Number(r["Days"] || 0);
   });
 
   // -------------------------------
@@ -61,10 +74,17 @@ export function renderHeroStylesReport(data) {
   });
 
   // -------------------------------
+  // Broken Count
+  // -------------------------------
+  function getBrokenCount(style) {
+    const sizes = stockByStyle[style] || {};
+    return Object.values(sizes).filter(q => q < 10).length;
+  }
+
+  // -------------------------------
   // Sale grouped by Month + Style
   // -------------------------------
   const monthStyleSale = {};
-
   sale.forEach(r => {
     const month = r["Month"];
     const style = r["Style ID"];
@@ -75,44 +95,54 @@ export function renderHeroStylesReport(data) {
       (monthStyleSale[month][style] || 0) + Number(r["Units"] || 0);
   });
 
-  const months = Object.keys(monthStyleSale).sort(); // chronological
+  // -------------------------------
+  // Sort Months (Newest → Oldest)
+  // -------------------------------
+  const months = Object.keys(monthStyleSale).sort((a, b) => {
+    const ma = parseMonth(a);
+    const mb = parseMonth(b);
+    return mb.year !== ma.year
+      ? mb.year - ma.year
+      : mb.month - ma.month;
+  });
 
   let html = "";
 
   // -------------------------------
-  // Helper: Broken Count
-  // -------------------------------
-  function getBrokenCount(style) {
-    const sizeStock = stockByStyle[style] || {};
-    return Object.values(sizeStock).filter(qty => qty < 10).length;
-  }
-
-  // -------------------------------
-  // Process Month-wise
+  // Build Month-wise Blocks
   // -------------------------------
   months.forEach((month, idx) => {
-    const styles = Object.entries(monthStyleSale[month])
-      .map(([style, totalSale]) => ({ style, totalSale }))
+    const days = saleDaysMap[month] || 1;
+
+    const ranked = Object.entries(monthStyleSale[month])
+      .map(([style, totalSale]) => ({
+        style,
+        totalSale
+      }))
       .sort((a, b) => b.totalSale - a.totalSale)
       .slice(0, 20)
       .map((r, i) => ({ ...r, rank: i + 1 }));
 
-    const prevMonth = months[idx - 1];
+    // Previous month lookup
+    const prevMonth = months[idx + 1];
     const prevMap = {};
 
     if (prevMonth) {
-      Object.entries(monthStyleSale[prevMonth])
+      const prevDays = saleDaysMap[prevMonth] || 1;
+      Object.entries(monthStyleSale[prevMonth] || {})
         .sort((a, b) => b[1] - a[1])
         .slice(0, 20)
         .forEach(([style, sale], i) => {
           prevMap[style] = {
             rank: i + 1,
-            drr: sale / totalSaleDays
+            drr: sale / prevDays
           };
         });
     }
 
-    // ---- Month Header ----
+    // -------------------------------
+    // Month Header
+    // -------------------------------
     html += `
       <div class="style-row" onclick="this.nextElementSibling.classList.toggle('hidden')">
         📅 <b>${month}</b>
@@ -134,9 +164,8 @@ export function renderHeroStylesReport(data) {
           <tbody>
     `;
 
-    styles.forEach(r => {
-      const prev = prevMap[r.style];
-      const drr = r.totalSale / totalSaleDays;
+    ranked.forEach(r => {
+      const drr = r.totalSale / days;
       const stockQty = totalStockMap[r.style] || 0;
       const sc = drr ? stockQty / drr : 0;
       const broken = getBrokenCount(r.style);
@@ -144,6 +173,7 @@ export function renderHeroStylesReport(data) {
       let remark = "";
       let color = "";
 
+      const prev = prevMap[r.style];
       if (!prev) {
         remark = "New Addition";
         color = "#d97706"; // Amber
