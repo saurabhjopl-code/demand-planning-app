@@ -10,11 +10,7 @@ function parseCSV(csvText) {
   const rows = csvText.trim().split("\n").map(r =>
     r.split(",").map(v => v.replace(/^"|"$/g, "").trim())
   );
-
-  const headers = rows[0];
-  const dataRows = rows.slice(1);
-
-  return { headers, dataRows };
+  return { headers: rows[0], dataRows: rows.slice(1) };
 }
 
 function validateHeaders(sheetName, actual, expected) {
@@ -48,12 +44,14 @@ export async function loadAllData() {
     sale,
     stock,
     styleStatus,
-    saleDays
+    saleDays,
+    sizeCount // ✅ ADDED
   ] = await Promise.all([
     fetchSheet("SALE", CONFIG.EXPECTED_HEADERS.SALE),
     fetchSheet("STOCK", CONFIG.EXPECTED_HEADERS.STOCK),
     fetchSheet("STYLE_STATUS", CONFIG.EXPECTED_HEADERS.STYLE_STATUS),
-    fetchSheet("SALE_DAYS", CONFIG.EXPECTED_HEADERS.SALE_DAYS)
+    fetchSheet("SALE_DAYS", CONFIG.EXPECTED_HEADERS.SALE_DAYS),
+    fetchSheet("SIZE_COUNT", CONFIG.EXPECTED_HEADERS.SIZE_COUNT)
   ]);
 
   const totalSaleDays = saleDays.reduce(
@@ -66,6 +64,7 @@ export async function loadAllData() {
     stock,
     styleStatus,
     saleDays,
-    totalSaleDays
+    totalSaleDays,
+    sizeCount // ✅ EXPOSED
   };
 }
