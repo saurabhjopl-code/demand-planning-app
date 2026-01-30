@@ -1,10 +1,11 @@
 // ===================================================
-// Broken Size Report – V2.4 FINAL (LOCKED)
+// Broken Size Report – V2.4.1 (SORTED BY SALE)
 // ===================================================
-// Uses Size Count sheet (authoritative)
+// Uses Size Count sheet
 // Excludes Company Remark = Closed
 // Excludes Zero Broken Count
-// Adds Severity Bands with Color Coding
+// Severity Bands applied
+// Sorted by Total Sale (High → Low)
 // ===================================================
 
 export function renderBrokenSizeReport(data) {
@@ -83,23 +84,23 @@ export function renderBrokenSizeReport(data) {
     );
 
     const brokenCount = brokenSizes.length;
-    if (brokenCount === 0) return; // ❌ remove zero broken
+    if (brokenCount === 0) return;
 
     const totalSale = saleMap[style] || 0;
-    if (totalSale <= 300) return; // ❌ outside severity rules
+    if (totalSale <= 300) return;
 
     let remark = "";
     let color = "";
 
     if (brokenCount > 4) {
       remark = "Critical";
-      color = "#dc2626"; // Red
+      color = "#dc2626";
     } else if (brokenCount > 2) {
       remark = "Warning";
-      color = "#d97706"; // Amber
+      color = "#d97706";
     } else {
       remark = "Good";
-      color = "#16a34a"; // Green
+      color = "#16a34a";
     }
 
     const totalStock = totalStockMap[style] || 0;
@@ -121,15 +122,14 @@ export function renderBrokenSizeReport(data) {
   });
 
   // -------------------------------
-  // Sort: Critical → Warning → Good
+  // SORT: Total Sale High → Low
   // -------------------------------
-  const priority = { Critical: 1, Warning: 2, Good: 3 };
-  rows.sort((a, b) => priority[a.remark] - priority[b.remark]);
+  rows.sort((a, b) => b.totalSale - a.totalSale);
 
   if (!rows.length) {
     container.innerHTML =
       `<p style="padding:12px;color:#6b7280">
-        No broken sizes meeting severity criteria.
+        No broken sizes meeting criteria.
       </p>`;
     return;
   }
