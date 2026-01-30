@@ -9,8 +9,7 @@ export const CONFIG = {
     SALE: "Sale",
     STOCK: "Stock",
     STYLE_STATUS: "Style Status",
-    SALE_DAYS: "Sale Days",
-    SIZE_COUNT: "Size Count"
+    SALE_DAYS: "Sale Days"
   },
 
   EXPECTED_HEADERS: {
@@ -44,11 +43,6 @@ export const CONFIG = {
     SALE_DAYS: [
       "Month",
       "Days"
-    ],
-
-    SIZE_COUNT: [
-      "Style ID",
-      "Size Count"
     ]
   }
 };

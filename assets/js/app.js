@@ -11,14 +11,10 @@ import { renderSummaryCategory } from "./summary/summaryCategory.js";
 import { renderDemandReport } from "./reports/demandReport.js";
 import { renderOverstockReport } from "./reports/overstockReport.js";
 import { renderSizeCurveReport } from "./reports/sizeCurveReport.js";
-import { renderBrokenSizeReport } from "./reports/brokenSizeReport.js";
 
 let RAW_DATA;
 
-// ===============================
-// CORE SUMMARY RENDER (ALWAYS SAFE)
-// ===============================
-function renderSummaries(data) {
+function renderAll(data) {
   renderSummarySale(data);
   renderSummaryStock(data);
   renderSummarySCBand(data);
@@ -27,66 +23,37 @@ function renderSummaries(data) {
   renderSummaryCategory(data);
 }
 
-// ===============================
-// REPORT RENDER (ISOLATED)
-// ===============================
-function renderActiveReport(data) {
+function renderReport(data) {
   const active = document.querySelector(".report-tabs button.active");
   const container = document.getElementById("report-content");
   if (!active || !container) return;
 
   container.innerHTML = "";
 
-  switch (active.dataset.report) {
-    case "demand":
-      renderDemandReport(data);
-      break;
-    case "overstock":
-      renderOverstockReport(data);
-      break;
-    case "sizecurve":
-      renderSizeCurveReport(data);
-      break;
-    case "brokensize":
-      renderBrokenSizeReport(data);
-      break;
-    default:
-      container.innerHTML =
-        `<p style="padding:12px;color:#6b7280">Select a report</p>`;
+  if (active.dataset.report === "demand") {
+    renderDemandReport(data);
+  } else if (active.dataset.report === "overstock") {
+    renderOverstockReport(data);
+  } else if (active.dataset.report === "sizecurve") {
+    renderSizeCurveReport(data);
+  } else {
+    container.innerHTML =
+      `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
   }
 }
 
-// ===============================
-// FILTER RE-RENDER PIPELINE
-// ===============================
-function rerender() {
-  const filtered = applyFilters(RAW_DATA);
-
-  // 🔒 Summaries must NEVER depend on reports
-  renderSummaries(filtered);
-
-  // Reports only render if user has clicked a tab
-  renderActiveReport(filtered);
-}
-
-// ===============================
-// REPORT TAB HANDLING (USER DRIVEN)
-// ===============================
 function setupReportTabs() {
-  const tabs = document.querySelectorAll(".report-tabs button");
-
-  tabs.forEach(btn => {
-    btn.addEventListener("click", () => {
-      tabs.forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".report-tabs button").forEach(btn => {
+    btn.onclick = () => {
+      document
+        .querySelectorAll(".report-tabs button")
+        .forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      renderActiveReport(applyFilters(RAW_DATA));
-    });
+      renderReport(applyFilters(RAW_DATA));
+    };
   });
 }
 
-// ===============================
-// DROPDOWNS
-// ===============================
 function setupDropdown(key, values) {
   const dropdown = document.querySelector(`[data-filter="${key}"]`);
   const toggle = dropdown.querySelector(".dropdown-toggle");
@@ -94,14 +61,12 @@ function setupDropdown(key, values) {
 
   menu.innerHTML = "";
 
-  values
-    .filter(Boolean)
-    .sort()
-    .forEach(v => {
-      const label = document.createElement("label");
-      label.innerHTML = `<input type="checkbox" value="${v}"> ${v}`;
-      menu.appendChild(label);
-    });
+  values.sort().forEach(v => {
+    if (!v) return;
+    const label = document.createElement("label");
+    label.innerHTML = `<input type="checkbox" value="${v}"> ${v}`;
+    menu.appendChild(label);
+  });
 
   toggle.onclick = () => dropdown.classList.toggle("open");
 
@@ -114,9 +79,12 @@ function setupDropdown(key, values) {
   });
 }
 
-// ===============================
-// INIT
-// ===============================
+function rerender() {
+  const filtered = applyFilters(RAW_DATA);
+  renderAll(filtered);
+  renderReport(filtered);
+}
+
 async function init() {
   RAW_DATA = await loadAllData();
 
@@ -124,11 +92,11 @@ async function init() {
   setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
   setupDropdown(
     "Category",
-    [...new Set(RAW_DATA.styleStatus.map(r => r["Category"])))]
+    [...new Set(RAW_DATA.styleStatus.map(r => r["Category"]))]
   );
   setupDropdown(
     "CompanyRemark",
-    [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"])))]
+    [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]
   );
 
   const styleInput = document.getElementById("style-search");
@@ -146,8 +114,6 @@ async function init() {
   };
 
   setupReportTabs();
-
-  // 🔑 INITIAL RENDER (SUMMARIES ONLY)
   rerender();
 }
 

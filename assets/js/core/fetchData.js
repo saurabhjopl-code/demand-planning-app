@@ -7,12 +7,9 @@ import { CONFIG } from "../config.js";
 const BASE_URL = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=`;
 
 function parseCSV(csvText) {
-  const rows = csvText
-    .trim()
-    .split("\n")
-    .map(r =>
-      r.split(",").map(v => v.replace(/^"|"$/g, "").trim())
-    );
+  const rows = csvText.trim().split("\n").map(r =>
+    r.split(",").map(v => v.replace(/^"|"$/g, "").trim())
+  );
 
   const headers = rows[0];
   const dataRows = rows.slice(1);
@@ -51,14 +48,12 @@ export async function loadAllData() {
     sale,
     stock,
     styleStatus,
-    saleDays,
-    sizeCount
+    saleDays
   ] = await Promise.all([
     fetchSheet("SALE", CONFIG.EXPECTED_HEADERS.SALE),
     fetchSheet("STOCK", CONFIG.EXPECTED_HEADERS.STOCK),
     fetchSheet("STYLE_STATUS", CONFIG.EXPECTED_HEADERS.STYLE_STATUS),
-    fetchSheet("SALE_DAYS", CONFIG.EXPECTED_HEADERS.SALE_DAYS),
-    fetchSheet("SIZE_COUNT", CONFIG.EXPECTED_HEADERS.SIZE_COUNT)
+    fetchSheet("SALE_DAYS", CONFIG.EXPECTED_HEADERS.SALE_DAYS)
   ]);
 
   const totalSaleDays = saleDays.reduce(
@@ -71,7 +66,6 @@ export async function loadAllData() {
     stock,
     styleStatus,
     saleDays,
-    sizeCount,
     totalSaleDays
   };
 }
