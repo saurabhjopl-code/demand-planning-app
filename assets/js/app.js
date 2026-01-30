@@ -15,7 +15,7 @@ import { renderSizeCurveReport } from "./reports/sizeCurveReport.js";
 let RAW_DATA;
 
 // ===============================
-// SUMMARY RENDER (UNCHANGED)
+// SUMMARIES (UNCHANGED)
 // ===============================
 function renderAll(data) {
   renderSummarySale(data);
@@ -27,9 +27,9 @@ function renderAll(data) {
 }
 
 // ===============================
-// REPORT RENDER (SAFE)
+// REPORTS (SAFE ADDITION ONLY)
 // ===============================
-async function renderReport(data) {
+function renderReport(data) {
   const active = document.querySelector(".report-tabs button.active");
   const container = document.getElementById("report-content");
   if (!active || !container) return;
@@ -38,18 +38,26 @@ async function renderReport(data) {
 
   if (active.dataset.report === "demand") {
     renderDemandReport(data);
+
   } else if (active.dataset.report === "overstock") {
     renderOverstockReport(data);
+
   } else if (active.dataset.report === "sizecurve") {
     renderSizeCurveReport(data);
+
   } else if (active.dataset.report === "brokensize") {
-    try {
-      const module = await import("./reports/brokenSizeReport.js");
-      module.renderBrokenSizeReport(data);
-    } catch (e) {
-      container.innerHTML =
-        `<p style="padding:12px;color:#6b7280">Broken Size report not added yet.</p>`;
-    }
+    // 🔒 SAFE: dynamic load, no crash possible
+    import("./reports/brokenSizeReport.js")
+      .then(mod => {
+        mod.renderBrokenSizeReport(data);
+      })
+      .catch(() => {
+        container.innerHTML =
+          `<p style="padding:12px;color:#6b7280">
+            Broken Size report not added yet.
+          </p>`;
+      });
+
   } else {
     container.innerHTML =
       `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
@@ -57,7 +65,7 @@ async function renderReport(data) {
 }
 
 // ===============================
-// REPORT TABS
+// TABS (UNCHANGED)
 // ===============================
 function setupReportTabs() {
   document.querySelectorAll(".report-tabs button").forEach(btn => {
@@ -72,7 +80,7 @@ function setupReportTabs() {
 }
 
 // ===============================
-// DROPDOWNS
+// FILTERS (UNCHANGED)
 // ===============================
 function setupDropdown(key, values) {
   const dropdown = document.querySelector(`[data-filter="${key}"]`);
@@ -100,7 +108,7 @@ function setupDropdown(key, values) {
 }
 
 // ===============================
-// RERENDER PIPELINE
+// CORE RERENDER (UNCHANGED)
 // ===============================
 function rerender() {
   const filtered = applyFilters(RAW_DATA);
@@ -109,7 +117,7 @@ function rerender() {
 }
 
 // ===============================
-// INIT
+// INIT (UNCHANGED)
 // ===============================
 async function init() {
   RAW_DATA = await loadAllData();
