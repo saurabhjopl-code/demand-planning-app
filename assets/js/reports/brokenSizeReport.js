@@ -8,13 +8,30 @@ export function renderBrokenSizeReport(data) {
   const totalSaleDays = data.totalSaleDays;
 
   // ===============================
-  // EXCLUDE CLOSED STYLES
+  // CLOSED STYLES
   // ===============================
   const closedStyles = new Set(
     styleStatus
       .filter(r => String(r["Company Remark"]).toUpperCase() === "CLOSED")
       .map(r => r["Style ID"])
   );
+
+  // ===============================
+  // STYLE UNIVERSE (SALE + STOCK)
+  // ===============================
+  const styleSet = new Set();
+
+  sale.forEach(r => {
+    if (!closedStyles.has(r["Style ID"])) {
+      styleSet.add(r["Style ID"]);
+    }
+  });
+
+  stock.forEach(r => {
+    if (!closedStyles.has(r["Style ID"])) {
+      styleSet.add(r["Style ID"]);
+    }
+  });
 
   // ===============================
   // TOTAL SALES BY STYLE
@@ -47,7 +64,7 @@ export function renderBrokenSizeReport(data) {
   });
 
   // ===============================
-  // SIZE COUNT LOOKUP
+  // TOTAL SIZE COUNT (FROM SHEET)
   // ===============================
   const totalSizeMap = {};
   sizeCountSheet.forEach(r => {
@@ -59,14 +76,12 @@ export function renderBrokenSizeReport(data) {
   // ===============================
   const rows = [];
 
-  Object.keys(totalSizeMap).forEach(style => {
-    if (closedStyles.has(style)) return;
-
-    const sizes = stockByStyleSize[style] || {};
+  styleSet.forEach(style => {
+    const sizeStockMap = stockByStyleSize[style] || {};
     const brokenSizes = [];
 
-    Object.keys(sizes).forEach(size => {
-      if (sizes[size] < 10) {
+    Object.keys(sizeStockMap).forEach(size => {
+      if (Number(sizeStockMap[size]) < 10) {
         brokenSizes.push(size);
       }
     });
@@ -80,7 +95,7 @@ export function renderBrokenSizeReport(data) {
 
     rows.push({
       style,
-      totalSizes: totalSizeMap[style],
+      totalSizes: totalSizeMap[style] || 0,
       brokenCount: brokenSizes.length,
       brokenSizes: brokenSizes.join(", "),
       totalSold,
@@ -90,12 +105,23 @@ export function renderBrokenSizeReport(data) {
     });
   });
 
-  // SORT: Broken Count ↓
-  rows.sort((a, b) => b.brokenCount - a.brokenCount);
+  // SORT: Broken Count ↓ then Sales ↓
+  rows.sort((a, b) => {
+    if (b.brokenCount !== a.brokenCount) {
+      return b.brokenCount - a.brokenCount;
+    }
+    return b.totalSold - a.totalSold;
+  });
 
   // ===============================
-  // RENDER TABLE
+  // RENDER
   // ===============================
+  if (rows.length === 0) {
+    container.innerHTML =
+      `<p style="padding:12px;color:#6b7280">No broken sizes found for current filters.</p>`;
+    return;
+  }
+
   let html = `
     <table class="summary-table">
       <thead>
@@ -128,10 +154,6 @@ export function renderBrokenSizeReport(data) {
     `;
   });
 
-  html += `
-      </tbody>
-    </table>
-  `;
-
+  html += `</tbody></table>`;
   container.innerHTML = html;
 }
