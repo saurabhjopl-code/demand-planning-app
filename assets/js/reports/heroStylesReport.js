@@ -1,13 +1,7 @@
 // ===================================================
 // HERO STYLES – Month-wise Top 20 (Columns, Expand/Collapse)
-// Version: V2.6 FINAL (Built on V2.5 Stable)
-// ===================================================
-// - Months are COLUMNS (newest → oldest)
-// - Each month column group is expandable / collapsible
-// - Latest month expanded by default
-// - Rank based ONLY on Total Sale
-// - DRR uses that month's Sale Days
-// - SC = Current Stock / Month DRR
+// Version: V2.6.1 (Brokenness Restored)
+// Built on V2.5 STABLE
 // ===================================================
 
 export function renderHeroStylesReport(data) {
@@ -49,14 +43,33 @@ export function renderHeroStylesReport(data) {
   });
 
   // -------------------------------
-  // Current Stock by Style
+  // Stock by Style & Size (for Brokenness)
   // -------------------------------
-  const stockMap = {};
+  const stockByStyleSize = {};
+  const totalStockMap = {};
+
   stock.forEach(r => {
     const style = r["Style ID"];
     if (closedStyles.has(style)) return;
-    stockMap[style] = (stockMap[style] || 0) + Number(r["Units"] || 0);
+
+    const size = r["Size"];
+    const units = Number(r["Units"] || 0);
+
+    stockByStyleSize[style] ??= {};
+    stockByStyleSize[style][size] =
+      (stockByStyleSize[style][size] || 0) + units;
+
+    totalStockMap[style] =
+      (totalStockMap[style] || 0) + units;
   });
+
+  // -------------------------------
+  // Brokenness Count
+  // -------------------------------
+  function getBrokenCount(style) {
+    const sizeMap = stockByStyleSize[style] || {};
+    return Object.values(sizeMap).filter(qty => qty < 10).length;
+  }
 
   // -------------------------------
   // Sale grouped by Month + Style
@@ -120,7 +133,7 @@ export function renderHeroStylesReport(data) {
           <th rowspan="2">Stock</th>
   `;
 
-  months.forEach((m, i) => {
+  months.forEach(m => {
     html += `
       <th colspan="6"
           class="month-toggle"
@@ -150,10 +163,12 @@ export function renderHeroStylesReport(data) {
   // Rows
   // -------------------------------
   heroStyles.forEach(style => {
+    const broken = getBrokenCount(style);
+
     html += `
       <tr>
         <td><b>${style}</b></td>
-        <td>${stockMap[style] || 0}</td>
+        <td>${totalStockMap[style] || 0}</td>
     `;
 
     months.forEach((m, idx) => {
@@ -184,9 +199,9 @@ export function renderHeroStylesReport(data) {
         <td class="col-${m}">${cur ? cur.sale : ""}</td>
         <td class="col-${m}">${cur ? cur.drr.toFixed(2) : ""}</td>
         <td class="col-${m}">
-          ${cur ? (cur.drr ? (stockMap[style] / cur.drr).toFixed(1) : "") : ""}
+          ${cur && cur.drr ? (totalStockMap[style] / cur.drr).toFixed(1) : ""}
         </td>
-        <td class="col-${m}"></td>
+        <td class="col-${m}">${cur ? broken : ""}</td>
         <td class="col-${m}" style="color:${color};font-weight:600">
           ${remark}
         </td>
@@ -203,8 +218,11 @@ export function renderHeroStylesReport(data) {
   // Expand / Collapse Logic
   // -------------------------------
   months.forEach((m, i) => {
-    const cols = document.querySelectorAll(`.col-${m}`);
-    if (i !== 0) cols.forEach(c => (c.style.display = "none"));
+    if (i !== 0) {
+      document
+        .querySelectorAll(`.col-${m}`)
+        .forEach(c => (c.style.display = "none"));
+    }
   });
 
   document.querySelectorAll(".month-toggle").forEach(th => {
