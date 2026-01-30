@@ -5,12 +5,33 @@ export function renderOverstockReport(data) {
   const { sale, stock, totalSaleDays, saleDays } = data;
 
   // ===============================
-  // SIZE ORDER
+  // SIZE ORDER (DEFENSIVE)
   // ===============================
   const SIZE_ORDER = [
     "FS","XS","S","M","L","XL","XXL",
     "3XL","4XL","5XL","6XL","7XL","8XL","9XL","10XL"
   ];
+
+  function sizeIndex(size) {
+    const idx = SIZE_ORDER.indexOf(String(size || "").toUpperCase());
+    return idx === -1 ? 999 : idx;
+  }
+
+  // ===============================
+  // MONTH PARSER
+  // ===============================
+  const MONTH_INDEX = {
+    JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,
+    JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12
+  };
+
+  function parseMonth(m) {
+    const [mon, yr] = m.split("-");
+    return {
+      year: Number(yr),
+      month: MONTH_INDEX[mon.toUpperCase()]
+    };
+  }
 
   // ===============================
   // SALE DAYS MAP
@@ -96,15 +117,21 @@ export function renderOverstockReport(data) {
         }
       );
 
-      const months = Object.keys(monthDRR).sort();
+      const months = Object.keys(monthDRR).sort((a, b) => {
+        const ma = parseMonth(a);
+        const mb = parseMonth(b);
+        return mb.year !== ma.year
+          ? mb.year - ma.year
+          : mb.month - ma.month;
+      });
+
       let remark = "";
-
       if (months.length >= 2) {
-        const last = months[months.length - 1];
-        const prev = months[months.length - 2];
-
-        if (monthDRR[last] < monthDRR[prev]) {
+        const latest = months[0];
+        const previous = months[1];
+        if (monthDRR[latest] < monthDRR[previous]) {
           remark = months
+            .reverse()
             .map(m => `${m} DRR - ${monthDRR[m].toFixed(2)}`)
             .join(", ");
         }
@@ -164,9 +191,7 @@ export function renderOverstockReport(data) {
     `;
 
     const skus = Object.keys(skuSales[r.style] || {}).sort(
-      (a, b) =>
-        SIZE_ORDER.indexOf(skuSizeMap[a]) -
-        SIZE_ORDER.indexOf(skuSizeMap[b])
+      (a, b) => sizeIndex(skuSizeMap[a]) - sizeIndex(skuSizeMap[b])
     );
 
     skus.forEach(sku => {
@@ -210,7 +235,7 @@ export function renderOverstockReport(data) {
       row.querySelector(".toggle").textContent = expanded ? "−" : "+";
 
       container
-        .querySelectorAll(\`.size-row[data-parent="\${style}"]\`)
+        .querySelectorAll(`.size-row[data-parent="${style}"]`)
         .forEach(r => {
           r.style.display = expanded ? "table-row" : "none";
         });
