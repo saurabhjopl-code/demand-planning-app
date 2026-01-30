@@ -15,7 +15,10 @@ import { renderBrokenSizeReport } from "./reports/brokenSizeReport.js";
 
 let RAW_DATA;
 
-function renderAll(data) {
+// ===============================
+// CORE SUMMARY RENDER (ALWAYS SAFE)
+// ===============================
+function renderSummaries(data) {
   renderSummarySale(data);
   renderSummaryStock(data);
   renderSummarySCBand(data);
@@ -24,41 +27,51 @@ function renderAll(data) {
   renderSummaryCategory(data);
 }
 
-function getActiveReportButton() {
-  let active = document.querySelector(".report-tabs button.active");
-
-  // 🔑 FORCE DEFAULT ACTIVE TAB
-  if (!active) {
-    active = document.querySelector('.report-tabs button[data-report="demand"]');
-    if (active) active.classList.add("active");
-  }
-
-  return active;
-}
-
-function renderReport(data) {
-  const active = getActiveReportButton();
+// ===============================
+// REPORT RENDER (ISOLATED)
+// ===============================
+function renderActiveReport(data) {
+  const active = document.querySelector(".report-tabs button.active");
   const container = document.getElementById("report-content");
   if (!active || !container) return;
 
   container.innerHTML = "";
 
-  const report = active.dataset.report;
-
-  if (report === "demand") {
-    renderDemandReport(data);
-  } else if (report === "overstock") {
-    renderOverstockReport(data);
-  } else if (report === "sizecurve") {
-    renderSizeCurveReport(data);
-  } else if (report === "brokensize") {
-    renderBrokenSizeReport(data);
-  } else {
-    container.innerHTML =
-      `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
+  switch (active.dataset.report) {
+    case "demand":
+      renderDemandReport(data);
+      break;
+    case "overstock":
+      renderOverstockReport(data);
+      break;
+    case "sizecurve":
+      renderSizeCurveReport(data);
+      break;
+    case "brokensize":
+      renderBrokenSizeReport(data);
+      break;
+    default:
+      container.innerHTML =
+        `<p style="padding:12px;color:#6b7280">Select a report</p>`;
   }
 }
 
+// ===============================
+// FILTER RE-RENDER PIPELINE
+// ===============================
+function rerender() {
+  const filtered = applyFilters(RAW_DATA);
+
+  // 🔒 Summaries must NEVER depend on reports
+  renderSummaries(filtered);
+
+  // Reports only render if user has clicked a tab
+  renderActiveReport(filtered);
+}
+
+// ===============================
+// REPORT TAB HANDLING (USER DRIVEN)
+// ===============================
 function setupReportTabs() {
   const tabs = document.querySelectorAll(".report-tabs button");
 
@@ -66,11 +79,14 @@ function setupReportTabs() {
     btn.addEventListener("click", () => {
       tabs.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      renderReport(applyFilters(RAW_DATA));
+      renderActiveReport(applyFilters(RAW_DATA));
     });
   });
 }
 
+// ===============================
+// DROPDOWNS
+// ===============================
 function setupDropdown(key, values) {
   const dropdown = document.querySelector(`[data-filter="${key}"]`);
   const toggle = dropdown.querySelector(".dropdown-toggle");
@@ -78,12 +94,14 @@ function setupDropdown(key, values) {
 
   menu.innerHTML = "";
 
-  values.sort().forEach(v => {
-    if (!v) return;
-    const label = document.createElement("label");
-    label.innerHTML = `<input type="checkbox" value="${v}"> ${v}`;
-    menu.appendChild(label);
-  });
+  values
+    .filter(Boolean)
+    .sort()
+    .forEach(v => {
+      const label = document.createElement("label");
+      label.innerHTML = `<input type="checkbox" value="${v}"> ${v}`;
+      menu.appendChild(label);
+    });
 
   toggle.onclick = () => dropdown.classList.toggle("open");
 
@@ -96,12 +114,9 @@ function setupDropdown(key, values) {
   });
 }
 
-function rerender() {
-  const filtered = applyFilters(RAW_DATA);
-  renderAll(filtered);
-  renderReport(filtered);
-}
-
+// ===============================
+// INIT
+// ===============================
 async function init() {
   RAW_DATA = await loadAllData();
 
@@ -109,7 +124,7 @@ async function init() {
   setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
   setupDropdown(
     "Category",
-    [...new Set(RAW_DATA.styleStatus.map(r => r["Category"]))]
+    [...new Set(RAW_DATA.styleStatus.map(r => r["Category"])))]
   );
   setupDropdown(
     "CompanyRemark",
@@ -132,7 +147,7 @@ async function init() {
 
   setupReportTabs();
 
-  // 🔑 GUARANTEED FIRST RENDER
+  // 🔑 INITIAL RENDER (SUMMARIES ONLY)
   rerender();
 }
 
