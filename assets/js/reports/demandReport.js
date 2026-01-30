@@ -5,6 +5,19 @@ export function renderDemandReport(data) {
   const { sale, stock, totalSaleDays, styleStatus } = data;
 
   // ===============================
+  // SIZE ORDER (LOCKED)
+  // ===============================
+  const SIZE_ORDER = [
+    "FS","XS","S","M","L","XL","XXL",
+    "3XL","4XL","5XL","6XL","7XL","8XL","9XL","10XL"
+  ];
+
+  function sizeIndex(size) {
+    const idx = SIZE_ORDER.indexOf(String(size || "").toUpperCase());
+    return idx === -1 ? 999 : idx;
+  }
+
+  // ===============================
   // CLOSED STYLE FILTER
   // ===============================
   const closedStyles = new Set(
@@ -38,14 +51,18 @@ export function renderDemandReport(data) {
   const styleSeller = {};
   const skuFC = {};
   const skuSeller = {};
+  const skuSizeMap = {};
 
   stock.forEach(r => {
     const style = r["Style ID"];
     if (closedStyles.has(style)) return;
 
     const sku = r["Uniware SKU"];
+    const size = r["Size"];
     const fc = String(r["FC"] || "").toUpperCase();
     const units = Number(r["Units"] || 0);
+
+    skuSizeMap[sku] = size;
 
     if (fc === "SELLER") {
       styleSeller[style] = (styleSeller[style] || 0) + units;
@@ -70,11 +87,8 @@ export function renderDemandReport(data) {
     const total = fc + seller;
 
     const drr = sales / totalSaleDays;
-
-    // ✅ SC BASED ON SELLER STOCK ONLY
     const sc = drr ? seller / drr : 0;
 
-    // ---------- DIRECT DEMAND ----------
     let directSum = 0;
     Object.keys(skuSales[style] || {}).forEach(sku => {
       const skuSale = skuSales[style][sku];
@@ -103,7 +117,6 @@ export function renderDemandReport(data) {
 
   // ===============================
   // PRIORITY SORT
-  // High DRR, Low SC
   // ===============================
   rows.sort((a, b) => {
     if (b.drr !== a.drr) return b.drr - a.drr;
@@ -111,7 +124,7 @@ export function renderDemandReport(data) {
   });
 
   // ===============================
-  // BUY BUCKET HELPER
+  // BUY BUCKET
   // ===============================
   function getBucket(sc) {
     if (sc < 15) return { label: "Urgent", color: "#dc2626" };
@@ -163,7 +176,11 @@ export function renderDemandReport(data) {
       </tr>
     `;
 
-    Object.keys(skuSales[r.style] || {}).forEach(sku => {
+    const skus = Object.keys(skuSales[r.style] || {}).sort(
+      (a, b) => sizeIndex(skuSizeMap[a]) - sizeIndex(skuSizeMap[b])
+    );
+
+    skus.forEach(sku => {
       const skuSale = skuSales[r.style][sku];
       const skuFCStock = (skuFC[r.style] || {})[sku] || 0;
       const skuSellerStock = (skuSeller[r.style] || {})[sku] || 0;
