@@ -14,9 +14,6 @@ import { renderSizeCurveReport } from "./reports/sizeCurveReport.js";
 
 let RAW_DATA;
 
-// ===============================
-// SUMMARIES (UNCHANGED)
-// ===============================
 function renderAll(data) {
   renderSummarySale(data);
   renderSummaryStock(data);
@@ -26,9 +23,6 @@ function renderAll(data) {
   renderSummaryCategory(data);
 }
 
-// ===============================
-// REPORTS (SAFE ADDITION ONLY)
-// ===============================
 function renderReport(data) {
   const active = document.querySelector(".report-tabs button.active");
   const container = document.getElementById("report-content");
@@ -38,35 +32,16 @@ function renderReport(data) {
 
   if (active.dataset.report === "demand") {
     renderDemandReport(data);
-
   } else if (active.dataset.report === "overstock") {
     renderOverstockReport(data);
-
   } else if (active.dataset.report === "sizecurve") {
     renderSizeCurveReport(data);
-
-  } else if (active.dataset.report === "brokensize") {
-    // 🔒 SAFE: dynamic load, no crash possible
-    import("./reports/brokenSizeReport.js")
-      .then(mod => {
-        mod.renderBrokenSizeReport(data);
-      })
-      .catch(() => {
-        container.innerHTML =
-          `<p style="padding:12px;color:#6b7280">
-            Broken Size report not added yet.
-          </p>`;
-      });
-
   } else {
     container.innerHTML =
       `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
   }
 }
 
-// ===============================
-// TABS (UNCHANGED)
-// ===============================
 function setupReportTabs() {
   document.querySelectorAll(".report-tabs button").forEach(btn => {
     btn.onclick = () => {
@@ -79,9 +54,6 @@ function setupReportTabs() {
   });
 }
 
-// ===============================
-// FILTERS (UNCHANGED)
-// ===============================
 function setupDropdown(key, values) {
   const dropdown = document.querySelector(`[data-filter="${key}"]`);
   const toggle = dropdown.querySelector(".dropdown-toggle");
@@ -107,18 +79,12 @@ function setupDropdown(key, values) {
   });
 }
 
-// ===============================
-// CORE RERENDER (UNCHANGED)
-// ===============================
 function rerender() {
   const filtered = applyFilters(RAW_DATA);
   renderAll(filtered);
   renderReport(filtered);
 }
 
-// ===============================
-// INIT (UNCHANGED)
-// ===============================
 async function init() {
   RAW_DATA = await loadAllData();
 
@@ -126,11 +92,11 @@ async function init() {
   setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
   setupDropdown(
     "Category",
-    [...new Set(RAW_DATA.styleStatus.map(r => r["Category"])))]
+    [...new Set(RAW_DATA.styleStatus.map(r => r["Category"]))]
   );
   setupDropdown(
     "CompanyRemark",
-    [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"])))]
+    [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]
   );
 
   const styleInput = document.getElementById("style-search");
