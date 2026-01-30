@@ -1,12 +1,12 @@
 // ===================================================
 // HERO STYLES REPORT – FLAT EXCEL FORMAT
-// Version: V3.1.1 (TOP-20 FIXED)
+// Version: V3.1.2 (SC = SELLER STOCK)
 // ===================================================
 // - ONLY styles appearing in Top-20 of ANY month
 // - Sale shown for all months (0 if no sale)
 // - Rank only if in Top-20
 // - DRR month-wise using Sale Days
-// - SC only for latest month
+// - SC calculated on SELLER STOCK (NOT total stock)
 // - Broken Count (<10 units per size)
 // - Closed styles excluded
 // ===================================================
@@ -81,31 +81,30 @@ export function renderHeroStylesReport(data) {
     Object.entries(saleMap[m] || {})
       .sort((a, b) => b[1] - a[1])
       .slice(0, 20)
-      .forEach(([style, units], i) => {
+      .forEach(([style], i) => {
         rankMap[m][style] = i + 1;
       });
   });
 
   // -------------------------------
-  // ✅ HERO STYLES = UNION OF TOP-20 ONLY
+  // HERO STYLES = UNION OF TOP-20
   // -------------------------------
   const heroStyles = new Set();
   months.forEach(m => {
-    Object.keys(rankMap[m]).forEach(style => {
-      heroStyles.add(style);
-    });
+    Object.keys(rankMap[m]).forEach(style => heroStyles.add(style));
   });
 
   // -------------------------------
-  // STOCK + BROKEN COUNT
+  // STOCK MAPS (SELLER + SIZE)
   // -------------------------------
+  const sellerStockMap = {};
   const stockByStyleSize = {};
-  const totalStock = {};
 
   stock.forEach(r => {
     const style = r["Style ID"];
     if (closed.has(style)) return;
 
+    const fc = String(r["FC"] || "").toUpperCase();
     const size = r["Size"];
     const units = Number(r["Units"] || 0);
 
@@ -113,12 +112,15 @@ export function renderHeroStylesReport(data) {
     stockByStyleSize[style][size] =
       (stockByStyleSize[style][size] || 0) + units;
 
-    totalStock[style] = (totalStock[style] || 0) + units;
+    if (fc === "SELLER") {
+      sellerStockMap[style] =
+        (sellerStockMap[style] || 0) + units;
+    }
   });
 
   function brokenCount(style) {
-    const m = stockByStyleSize[style] || {};
-    return Object.values(m).filter(q => q < 10).length;
+    const sizes = stockByStyleSize[style] || {};
+    return Object.values(sizes).filter(q => q < 10).length;
   }
 
   // -------------------------------
@@ -132,7 +134,7 @@ export function renderHeroStylesReport(data) {
           <th colspan="${months.length}">Sale</th>
           <th colspan="${months.length}">Rank</th>
           <th colspan="${months.length}">DRR</th>
-          <th rowspan="2">SC<br>(Latest)</th>
+          <th rowspan="2">SC<br>(Seller)</th>
           <th rowspan="2">Broken<br>Count</th>
           <th rowspan="2">Remark</th>
         </tr>
@@ -167,14 +169,15 @@ export function renderHeroStylesReport(data) {
       html += `<td>${drr ? drr.toFixed(2) : "0.00"}</td>`;
     });
 
-    // SC (latest)
+    // SC (SELLER STOCK ONLY)
     const latestSale = saleMap[latestMonth]?.[style] || 0;
     const latestDRR =
       latestSale / (saleDaysMap[latestMonth] || 1);
+    const sellerStock = sellerStockMap[style] || 0;
     const sc =
-      latestDRR ? (totalStock[style] || 0) / latestDRR : 0;
+      latestDRR ? sellerStock / latestDRR : 0;
 
-    // Remark logic
+    // Remark logic (unchanged)
     let remark = "";
     let color = "";
 
