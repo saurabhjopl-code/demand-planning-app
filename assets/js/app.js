@@ -11,9 +11,13 @@ import { renderSummaryCategory } from "./summary/summaryCategory.js";
 import { renderDemandReport } from "./reports/demandReport.js";
 import { renderOverstockReport } from "./reports/overstockReport.js";
 import { renderSizeCurveReport } from "./reports/sizeCurveReport.js";
+import { renderBrokenSizeReport } from "./reports/brokenSizeReport.js"; // ✅ ADDED
 
 let RAW_DATA;
 
+// ===============================
+// SUMMARY RENDER (UNCHANGED)
+// ===============================
 function renderAll(data) {
   renderSummarySale(data);
   renderSummaryStock(data);
@@ -23,6 +27,9 @@ function renderAll(data) {
   renderSummaryCategory(data);
 }
 
+// ===============================
+// REPORT RENDER (BROKEN SIZE ADDED)
+// ===============================
 function renderReport(data) {
   const active = document.querySelector(".report-tabs button.active");
   const container = document.getElementById("report-content");
@@ -36,12 +43,17 @@ function renderReport(data) {
     renderOverstockReport(data);
   } else if (active.dataset.report === "sizecurve") {
     renderSizeCurveReport(data);
+  } else if (active.dataset.report === "brokensize") {
+    renderBrokenSizeReport(data); // ✅ ADDED
   } else {
     container.innerHTML =
       `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
   }
 }
 
+// ===============================
+// REPORT TAB HANDLING (UNCHANGED)
+// ===============================
 function setupReportTabs() {
   document.querySelectorAll(".report-tabs button").forEach(btn => {
     btn.onclick = () => {
@@ -54,6 +66,9 @@ function setupReportTabs() {
   });
 }
 
+// ===============================
+// DROPDOWNS (UNCHANGED)
+// ===============================
 function setupDropdown(key, values) {
   const dropdown = document.querySelector(`[data-filter="${key}"]`);
   const toggle = dropdown.querySelector(".dropdown-toggle");
@@ -79,12 +94,18 @@ function setupDropdown(key, values) {
   });
 }
 
+// ===============================
+// RERENDER PIPELINE (UNCHANGED)
+// ===============================
 function rerender() {
   const filtered = applyFilters(RAW_DATA);
   renderAll(filtered);
   renderReport(filtered);
 }
 
+// ===============================
+// INIT (UNCHANGED)
+// ===============================
 async function init() {
   RAW_DATA = await loadAllData();
 
@@ -96,7 +117,7 @@ async function init() {
   );
   setupDropdown(
     "CompanyRemark",
-    [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"]))]
+    [...new Set(RAW_DATA.styleStatus.map(r => r["Company Remark"])))]
   );
 
   const styleInput = document.getElementById("style-search");
