@@ -11,7 +11,6 @@ import { renderSummaryCategory } from "./summary/summaryCategory.js";
 import { renderDemandReport } from "./reports/demandReport.js";
 import { renderOverstockReport } from "./reports/overstockReport.js";
 import { renderSizeCurveReport } from "./reports/sizeCurveReport.js";
-import { renderBrokenSizeReport } from "./reports/brokenSizeReport.js"; // ✅ ADDED
 
 let RAW_DATA;
 
@@ -28,9 +27,9 @@ function renderAll(data) {
 }
 
 // ===============================
-// REPORT RENDER (BROKEN SIZE ADDED)
+// REPORT RENDER (SAFE)
 // ===============================
-function renderReport(data) {
+async function renderReport(data) {
   const active = document.querySelector(".report-tabs button.active");
   const container = document.getElementById("report-content");
   if (!active || !container) return;
@@ -44,7 +43,13 @@ function renderReport(data) {
   } else if (active.dataset.report === "sizecurve") {
     renderSizeCurveReport(data);
   } else if (active.dataset.report === "brokensize") {
-    renderBrokenSizeReport(data); // ✅ ADDED
+    try {
+      const module = await import("./reports/brokenSizeReport.js");
+      module.renderBrokenSizeReport(data);
+    } catch (e) {
+      container.innerHTML =
+        `<p style="padding:12px;color:#6b7280">Broken Size report not added yet.</p>`;
+    }
   } else {
     container.innerHTML =
       `<p style="padding:12px;color:#6b7280">Coming soon</p>`;
@@ -52,7 +57,7 @@ function renderReport(data) {
 }
 
 // ===============================
-// REPORT TAB HANDLING (UNCHANGED)
+// REPORT TABS
 // ===============================
 function setupReportTabs() {
   document.querySelectorAll(".report-tabs button").forEach(btn => {
@@ -67,7 +72,7 @@ function setupReportTabs() {
 }
 
 // ===============================
-// DROPDOWNS (UNCHANGED)
+// DROPDOWNS
 // ===============================
 function setupDropdown(key, values) {
   const dropdown = document.querySelector(`[data-filter="${key}"]`);
@@ -95,7 +100,7 @@ function setupDropdown(key, values) {
 }
 
 // ===============================
-// RERENDER PIPELINE (UNCHANGED)
+// RERENDER PIPELINE
 // ===============================
 function rerender() {
   const filtered = applyFilters(RAW_DATA);
@@ -104,7 +109,7 @@ function rerender() {
 }
 
 // ===============================
-// INIT (UNCHANGED)
+// INIT
 // ===============================
 async function init() {
   RAW_DATA = await loadAllData();
@@ -113,7 +118,7 @@ async function init() {
   setupDropdown("FC", [...new Set(RAW_DATA.sale.map(r => r["FC"]))]);
   setupDropdown(
     "Category",
-    [...new Set(RAW_DATA.styleStatus.map(r => r["Category"]))]
+    [...new Set(RAW_DATA.styleStatus.map(r => r["Category"])))]
   );
   setupDropdown(
     "CompanyRemark",
