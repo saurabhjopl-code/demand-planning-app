@@ -1,5 +1,6 @@
 export function renderDemandReport(data) {
   const container = document.getElementById("report-content");
+  if (!container) return;
 
   const sale = data.sale;
   const stock = data.stock;
@@ -18,7 +19,7 @@ export function renderDemandReport(data) {
 
     styleSales[style] = (styleSales[style] || 0) + units;
 
-    if (!skuSales[style]) skuSales[style] = {};
+    skuSales[style] ??= {};
     skuSales[style][sku] = (skuSales[style][sku] || 0) + units;
   });
 
@@ -38,19 +39,21 @@ export function renderDemandReport(data) {
 
     if (fc === "SELLER") {
       styleSellerStock[style] = (styleSellerStock[style] || 0) + units;
-      if (!skuSellerStock[style]) skuSellerStock[style] = {};
-      skuSellerStock[style][sku] = (skuSellerStock[style][sku] || 0) + units;
+      skuSellerStock[style] ??= {};
+      skuSellerStock[style][sku] =
+        (skuSellerStock[style][sku] || 0) + units;
     } else {
       styleFCStock[style] = (styleFCStock[style] || 0) + units;
-      if (!skuFCStock[style]) skuFCStock[style] = {};
-      skuFCStock[style][sku] = (skuFCStock[style][sku] || 0) + units;
+      skuFCStock[style] ??= {};
+      skuFCStock[style][sku] =
+        (skuFCStock[style][sku] || 0) + units;
     }
   });
 
   // ===============================
-  // BUILD STYLE LEVEL DATA
+  // STYLE LEVEL CALCULATION
   // ===============================
-  const rows = Object.keys(styleSales).map(style => {
+  const styleRows = Object.keys(styleSales).map(style => {
     const sales = styleSales[style];
     const fc = styleFCStock[style] || 0;
     const seller = styleSellerStock[style] || 0;
@@ -58,6 +61,8 @@ export function renderDemandReport(data) {
 
     const drr = sales / totalSaleDays;
     const sc = drr ? total / drr : 0;
+
+    // STYLE DEMAND (Seller based)
     const demand = Math.max(0, Math.round(drr * 45 - seller));
 
     return { style, sales, fc, seller, total, drr, sc, demand };
@@ -78,17 +83,18 @@ export function renderDemandReport(data) {
           <th>Total Stock</th>
           <th>DRR</th>
           <th>SC</th>
-          <th>Demand</th>
+          <th>Demand (Allocated)</th>
+          <th>Demand (Direct)</th>
         </tr>
       </thead>
       <tbody>
   `;
 
-  rows.forEach(r => {
+  styleRows.forEach(r => {
     html += `
       <tr class="style-row" data-style="${r.style}">
         <td class="toggle">+</td>
-        <td>${r.style}</td>
+        <td><b>${r.style}</b></td>
         <td>${r.sales}</td>
         <td>${r.fc}</td>
         <td>${r.seller}</td>
@@ -96,10 +102,12 @@ export function renderDemandReport(data) {
         <td>${r.drr.toFixed(2)}</td>
         <td>${r.sc.toFixed(1)}</td>
         <td>${r.demand}</td>
+        <td>-</td>
       </tr>
     `;
 
     const skus = skuSales[r.style] || {};
+
     Object.keys(skus).forEach(sku => {
       const skuSale = skus[sku];
       const skuFC = (skuFCStock[r.style] || {})[sku] || 0;
@@ -108,8 +116,16 @@ export function renderDemandReport(data) {
 
       const skuDRR = skuSale / totalSaleDays;
       const skuSC = skuDRR ? skuTotal / skuDRR : 0;
+
+      // ALLOCATED DEMAND
       const share = skuSale / r.sales;
-      const skuDemand = Math.round(r.demand * share);
+      const allocatedDemand = Math.round(r.demand * share);
+
+      // DIRECT DEMAND
+      const directDemand = Math.max(
+        0,
+        Math.round(skuDRR * 45 - skuSeller)
+      );
 
       html += `
         <tr class="size-row" data-parent="${r.style}" style="display:none">
@@ -121,7 +137,8 @@ export function renderDemandReport(data) {
           <td>${skuTotal}</td>
           <td>${skuDRR.toFixed(2)}</td>
           <td>${skuSC.toFixed(1)}</td>
-          <td>${skuDemand}</td>
+          <td>${allocatedDemand}</td>
+          <td>${directDemand}</td>
         </tr>
       `;
     });
@@ -131,7 +148,7 @@ export function renderDemandReport(data) {
   container.innerHTML = html;
 
   // ===============================
-  // EXPAND / COLLAPSE LOGIC
+  // EXPAND / COLLAPSE
   // ===============================
   container.querySelectorAll(".style-row").forEach(row => {
     row.addEventListener("click", () => {
