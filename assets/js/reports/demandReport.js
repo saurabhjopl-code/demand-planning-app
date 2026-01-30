@@ -2,9 +2,16 @@ export function renderDemandReport(data) {
   const container = document.getElementById("report-content");
   if (!container) return;
 
-  const sale = data.sale;
-  const stock = data.stock;
-  const totalSaleDays = data.totalSaleDays;
+  const { sale, stock, totalSaleDays, styleStatus } = data;
+
+  // ===============================
+  // CLOSED STYLE FILTER
+  // ===============================
+  const closedStyles = new Set(
+    styleStatus
+      .filter(r => String(r["Company Remark"]).toUpperCase() === "CLOSED")
+      .map(r => r["Style ID"])
+  );
 
   // ===============================
   // SALES AGGREGATION
@@ -14,11 +21,12 @@ export function renderDemandReport(data) {
 
   sale.forEach(r => {
     const style = r["Style ID"];
+    if (closedStyles.has(style)) return;
+
     const sku = r["Uniware SKU"];
     const units = Number(r["Units"] || 0);
 
     styleSales[style] = (styleSales[style] || 0) + units;
-
     skuSales[style] ??= {};
     skuSales[style][sku] = (skuSales[style][sku] || 0) + units;
   });
@@ -26,74 +34,115 @@ export function renderDemandReport(data) {
   // ===============================
   // STOCK AGGREGATION
   // ===============================
-  const styleFCStock = {};
-  const styleSellerStock = {};
-  const skuFCStock = {};
-  const skuSellerStock = {};
+  const styleFC = {};
+  const styleSeller = {};
+  const skuFC = {};
+  const skuSeller = {};
 
   stock.forEach(r => {
     const style = r["Style ID"];
+    if (closedStyles.has(style)) return;
+
     const sku = r["Uniware SKU"];
-    const fc = String(r["FC"] || "").trim().toUpperCase();
+    const fc = String(r["FC"] || "").toUpperCase();
     const units = Number(r["Units"] || 0);
 
     if (fc === "SELLER") {
-      styleSellerStock[style] = (styleSellerStock[style] || 0) + units;
-      skuSellerStock[style] ??= {};
-      skuSellerStock[style][sku] =
-        (skuSellerStock[style][sku] || 0) + units;
+      styleSeller[style] = (styleSeller[style] || 0) + units;
+      skuSeller[style] ??= {};
+      skuSeller[style][sku] = (skuSeller[style][sku] || 0) + units;
     } else {
-      styleFCStock[style] = (styleFCStock[style] || 0) + units;
-      skuFCStock[style] ??= {};
-      skuFCStock[style][sku] =
-        (skuFCStock[style][sku] || 0) + units;
+      styleFC[style] = (styleFC[style] || 0) + units;
+      skuFC[style] ??= {};
+      skuFC[style][sku] = (skuFC[style][sku] || 0) + units;
     }
   });
 
   // ===============================
   // STYLE LEVEL CALCULATION
   // ===============================
-  const styleRows = Object.keys(styleSales).map(style => {
+  let rows = Object.keys(styleSales).map(style => {
     const sales = styleSales[style];
-    const fc = styleFCStock[style] || 0;
-    const seller = styleSellerStock[style] || 0;
+    const fc = styleFC[style] || 0;
+    const seller = styleSeller[style] || 0;
     const total = fc + seller;
 
     const drr = sales / totalSaleDays;
     const sc = drr ? total / drr : 0;
 
-    // STYLE DEMAND (Seller based)
-    const demand = Math.max(0, Math.round(drr * 45 - seller));
+    const allocated = Math.max(0, Math.round(drr * 45 - seller));
 
-    return { style, sales, fc, seller, total, drr, sc, demand };
-  }).sort((a, b) => b.demand - a.demand);
+    return {
+      style,
+      sales,
+      fc,
+      seller,
+      total,
+      drr,
+      sc,
+      allocated
+    };
+  }).filter(r => r.allocated > 0);
+
+  // ===============================
+  // PRIORITY SORT
+  // ===============================
+  rows.sort((a, b) => {
+    if (b.drr !== a.drr) return b.drr - a.drr;
+    return a.sc - b.sc;
+  });
 
   // ===============================
   // RENDER TABLE
   // ===============================
   let html = `
-    <table class="summary-table">
-      <thead>
-        <tr>
-          <th></th>
-          <th>Style ID / SKU</th>
-          <th>Sales</th>
-          <th>FC Stock</th>
-          <th>Seller Stock</th>
-          <th>Total Stock</th>
-          <th>DRR</th>
-          <th>SC</th>
-          <th>Demand (Allocated)</th>
-          <th>Demand (Direct)</th>
-        </tr>
-      </thead>
-      <tbody>
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Priority</th>
+        <th>Style ID / SKU</th>
+        <th>Sales</th>
+        <th>FC Stock</th>
+        <th>Seller Stock</th>
+        <th>Total Stock</th>
+        <th>DRR</th>
+        <th>SC</th>
+        <th>Allocated</th>
+        <th>Direct</th>
+        <th>Deviation %</th>
+        <th>Risk</th>
+      </tr>
+    </thead>
+    <tbody>
   `;
 
-  styleRows.forEach(r => {
+  rows.forEach((r, idx) => {
+    let directSum = 0;
+
+    Object.keys(skuSales[r.style] || {}).forEach(sku => {
+      const skuSale = skuSales[r.style][sku];
+      const skuSellerStock = (skuSeller[r.style] || {})[sku] || 0;
+      const skuDRR = skuSale / totalSaleDays;
+      const direct = Math.max(0, Math.round(skuDRR * 45 - skuSellerStock));
+      directSum += direct;
+    });
+
+    const deviation = r.allocated
+      ? ((directSum - r.allocated) / r.allocated) * 100
+      : 0;
+
+    const risk =
+      directSum > r.allocated ? "Overbuy" :
+      directSum < r.allocated ? "Underbuy" : "Balanced";
+
+    const highlight =
+      directSum > r.allocated * 1.25 ? "style='background:#fee2e2'" : "";
+
     html += `
-      <tr class="style-row" data-style="${r.style}">
+      <tr class="style-row" data-style="${r.style}" ${highlight}>
         <td class="toggle">+</td>
+        <td>${idx + 1}</td>
         <td><b>${r.style}</b></td>
         <td>${r.sales}</td>
         <td>${r.fc}</td>
@@ -101,44 +150,45 @@ export function renderDemandReport(data) {
         <td>${r.total}</td>
         <td>${r.drr.toFixed(2)}</td>
         <td>${r.sc.toFixed(1)}</td>
-        <td>${r.demand}</td>
-        <td>-</td>
+        <td>${r.allocated}</td>
+        <td>${directSum}</td>
+        <td>${deviation.toFixed(1)}%</td>
+        <td><b>${risk}</b></td>
       </tr>
     `;
 
-    const skus = skuSales[r.style] || {};
-
-    Object.keys(skus).forEach(sku => {
-      const skuSale = skus[sku];
-      const skuFC = (skuFCStock[r.style] || {})[sku] || 0;
-      const skuSeller = (skuSellerStock[r.style] || {})[sku] || 0;
-      const skuTotal = skuFC + skuSeller;
+    Object.keys(skuSales[r.style] || {}).forEach(sku => {
+      const skuSale = skuSales[r.style][sku];
+      const skuFCStock = (skuFC[r.style] || {})[sku] || 0;
+      const skuSellerStock = (skuSeller[r.style] || {})[sku] || 0;
+      const skuTotal = skuFCStock + skuSellerStock;
 
       const skuDRR = skuSale / totalSaleDays;
       const skuSC = skuDRR ? skuTotal / skuDRR : 0;
 
-      // ALLOCATED DEMAND
-      const share = skuSale / r.sales;
-      const allocatedDemand = Math.round(r.demand * share);
-
-      // DIRECT DEMAND
-      const directDemand = Math.max(
+      const skuDirect = Math.max(
         0,
-        Math.round(skuDRR * 45 - skuSeller)
+        Math.round(skuDRR * 45 - skuSellerStock)
       );
+
+      const share = skuSale / r.sales;
+      const skuAllocated = Math.round(r.allocated * share);
 
       html += `
         <tr class="size-row" data-parent="${r.style}" style="display:none">
           <td></td>
+          <td></td>
           <td>${sku}</td>
           <td>${skuSale}</td>
-          <td>${skuFC}</td>
-          <td>${skuSeller}</td>
+          <td>${skuFCStock}</td>
+          <td>${skuSellerStock}</td>
           <td>${skuTotal}</td>
           <td>${skuDRR.toFixed(2)}</td>
           <td>${skuSC.toFixed(1)}</td>
-          <td>${allocatedDemand}</td>
-          <td>${directDemand}</td>
+          <td>${skuAllocated}</td>
+          <td>${skuDirect}</td>
+          <td></td>
+          <td></td>
         </tr>
       `;
     });
@@ -157,7 +207,7 @@ export function renderDemandReport(data) {
       row.querySelector(".toggle").textContent = expanded ? "−" : "+";
 
       container
-        .querySelectorAll(`.size-row[data-parent="${style}"]`)
+        .querySelectorAll(\`.size-row[data-parent="\${style}"]\`)
         .forEach(r => {
           r.style.display = expanded ? "table-row" : "none";
         });
