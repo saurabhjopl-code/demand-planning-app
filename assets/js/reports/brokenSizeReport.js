@@ -1,34 +1,59 @@
 // ===================================================
-// Broken Size Report
+// Broken Size Report – V2.4 FINAL (LOCKED)
+// ===================================================
+// Uses Size Count sheet (authoritative)
+// Excludes Company Remark = Closed
+// Excludes Zero Broken Count
+// Adds Severity Bands with Color Coding
 // ===================================================
 
 export function renderBrokenSizeReport(data) {
   const container = document.getElementById("report-content");
+  if (!container) return;
+
   container.innerHTML = "";
 
-  const { sale, stock, styleStatus, sizeCount, totalSaleDays } = data;
+  const {
+    sale,
+    stock,
+    styleStatus,
+    sizeCount,
+    totalSaleDays
+  } = data;
 
-  if (!sizeCount || !sizeCount.length) {
-    container.innerHTML =
-      `<p style="padding:12px;color:#6b7280">Size Count data not available</p>`;
-    return;
-  }
-
-  // ---- Exclude CLOSED styles ----
+  // -------------------------------
+  // Closed Styles
+  // -------------------------------
   const closedStyles = new Set(
     styleStatus
-      .filter(r => r["Company Remark"] === "Closed")
+      .filter(r => String(r["Company Remark"]).toUpperCase() === "CLOSED")
       .map(r => r["Style ID"])
   );
 
-  // ---- Build Size Count Map ----
-  const expectedSizeMap = {};
+  // -------------------------------
+  // Size Count Map
+  // -------------------------------
+  const sizeCountMap = {};
   sizeCount.forEach(r => {
-    expectedSizeMap[r["Style ID"]] = Number(r["Size Count"] || 0);
+    sizeCountMap[r["Style ID"]] = Number(r["Size Count"] || 0);
   });
 
-  // ---- Aggregate Stock by Style+Size ----
-  const stockMap = {};
+  // -------------------------------
+  // Sales by Style
+  // -------------------------------
+  const saleMap = {};
+  sale.forEach(r => {
+    const style = r["Style ID"];
+    if (closedStyles.has(style)) return;
+    saleMap[style] = (saleMap[style] || 0) + Number(r["Units"] || 0);
+  });
+
+  // -------------------------------
+  // Stock by Style & Size
+  // -------------------------------
+  const stockByStyle = {};
+  const totalStockMap = {};
+
   stock.forEach(r => {
     const style = r["Style ID"];
     if (closedStyles.has(style)) return;
@@ -36,58 +61,83 @@ export function renderBrokenSizeReport(data) {
     const size = r["Size"];
     const units = Number(r["Units"] || 0);
 
-    stockMap[style] ??= {};
-    stockMap[style][size] = (stockMap[style][size] || 0) + units;
+    if (!stockByStyle[style]) stockByStyle[style] = {};
+    stockByStyle[style][size] =
+      (stockByStyle[style][size] || 0) + units;
+
+    totalStockMap[style] =
+      (totalStockMap[style] || 0) + units;
   });
 
-  // ---- Aggregate Sale ----
-  const saleMap = {};
-  sale.forEach(r => {
-    const style = r["Style ID"];
-    if (closedStyles.has(style)) return;
-
-    saleMap[style] = (saleMap[style] || 0) + Number(r["Units"] || 0);
-  });
-
-  // ---- Build Rows ----
+  // -------------------------------
+  // Build Rows
+  // -------------------------------
   const rows = [];
 
-  Object.keys(expectedSizeMap).forEach(style => {
+  Object.keys(sizeCountMap).forEach(style => {
     if (closedStyles.has(style)) return;
 
-    const sizeStock = stockMap[style] || {};
-    const brokenSizes = Object.entries(sizeStock)
-      .filter(([, qty]) => qty < 10)
-      .map(([size]) => size);
+    const sizeStock = stockByStyle[style] || {};
+    const brokenSizes = Object.keys(sizeStock).filter(
+      sz => sizeStock[sz] < 10
+    );
 
     const brokenCount = brokenSizes.length;
-    if (!brokenCount) return;
+    if (brokenCount === 0) return; // ❌ remove zero broken
 
-    const totalStock = Object.values(sizeStock).reduce((a, b) => a + b, 0);
     const totalSale = saleMap[style] || 0;
+    if (totalSale <= 300) return; // ❌ outside severity rules
+
+    let remark = "";
+    let color = "";
+
+    if (brokenCount > 4) {
+      remark = "Critical";
+      color = "#dc2626"; // Red
+    } else if (brokenCount > 2) {
+      remark = "Warning";
+      color = "#d97706"; // Amber
+    } else {
+      remark = "Good";
+      color = "#16a34a"; // Green
+    }
+
+    const totalStock = totalStockMap[style] || 0;
     const drr = totalSaleDays ? totalSale / totalSaleDays : 0;
     const sc = drr ? totalStock / drr : 0;
 
     rows.push({
       style,
-      totalSizes: expectedSizeMap[style],
+      totalSizes: sizeCountMap[style] || 0,
       brokenCount,
       brokenSizes: brokenSizes.join(", "),
       totalSale,
       totalStock,
-      drr: drr.toFixed(2),
-      sc: sc.toFixed(1)
+      drr,
+      sc,
+      remark,
+      color
     });
   });
 
+  // -------------------------------
+  // Sort: Critical → Warning → Good
+  // -------------------------------
+  const priority = { Critical: 1, Warning: 2, Good: 3 };
+  rows.sort((a, b) => priority[a.remark] - priority[b.remark]);
+
   if (!rows.length) {
     container.innerHTML =
-      `<p style="padding:12px;color:#6b7280">No broken sizes found</p>`;
+      `<p style="padding:12px;color:#6b7280">
+        No broken sizes meeting severity criteria.
+      </p>`;
     return;
   }
 
-  // ---- Render Table ----
-  container.innerHTML = `
+  // -------------------------------
+  // Render Table
+  // -------------------------------
+  let html = `
     <table class="summary-table">
       <thead>
         <tr>
@@ -99,22 +149,34 @@ export function renderBrokenSizeReport(data) {
           <th>Total Stock</th>
           <th>DRR</th>
           <th>SC</th>
+          <th>Remark</th>
         </tr>
       </thead>
       <tbody>
-        ${rows.map(r => `
-          <tr>
-            <td>${r.style}</td>
-            <td>${r.totalSizes}</td>
-            <td>${r.brokenCount}</td>
-            <td>${r.brokenSizes}</td>
-            <td>${r.totalSale}</td>
-            <td>${r.totalStock}</td>
-            <td>${r.drr}</td>
-            <td>${r.sc}</td>
-          </tr>
-        `).join("")}
+  `;
+
+  rows.forEach(r => {
+    html += `
+      <tr>
+        <td><b>${r.style}</b></td>
+        <td>${r.totalSizes}</td>
+        <td><b>${r.brokenCount}</b></td>
+        <td>${r.brokenSizes}</td>
+        <td>${r.totalSale}</td>
+        <td>${r.totalStock}</td>
+        <td>${r.drr.toFixed(2)}</td>
+        <td>${r.sc.toFixed(1)}</td>
+        <td style="font-weight:700;color:${r.color}">
+          ${r.remark}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
       </tbody>
     </table>
   `;
+
+  container.innerHTML = html;
 }
