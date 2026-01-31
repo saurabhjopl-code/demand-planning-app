@@ -163,7 +163,7 @@ main {
 }
 
 /* ===============================
-   TABLES
+   TABLES (GLOBAL)
 ================================ */
 .summary-table {
   width: 100%;
@@ -183,7 +183,7 @@ main {
 }
 
 /* ===============================
-   REPORTS (ADDED)
+   REPORTS
 ================================ */
 #reports-section {
   margin-top: 40px;
@@ -208,7 +208,21 @@ main {
   color: #fff;
 }
 
-/* Expand / collapse */
+/* ===============================
+   STICKY REPORT HEADERS (NEW)
+================================ */
+/* Applies to ALL current & future reports automatically */
+#reports-section table thead th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 10;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.04);
+}
+
+/* ===============================
+   EXPAND / COLLAPSE ROWS
+================================ */
 .style-row {
   background: #f8fafc;
   cursor: pointer;
