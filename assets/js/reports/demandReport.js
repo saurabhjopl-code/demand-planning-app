@@ -1,10 +1,10 @@
 // ===================================================
-// Demand Report – FINAL (V3.1.4 SAFE)
-// - Buy Bucket Summary (Top Section)
+// Demand Report – FINAL (V3.1.3 COLOR FIX)
+// - Buy Bucket Summary
 // - Seller-stock based SC
 // - Size-wise bucket contribution
 // - Closed styles excluded
-// - FULL SYNTAX SAFE (NO APP BREAK)
+// - ONLY color logic added (NO calculation change)
 // ===================================================
 
 export function renderDemandReport(data) {
@@ -26,6 +26,15 @@ export function renderDemandReport(data) {
     const idx = SIZE_ORDER.indexOf(String(size || "").toUpperCase());
     return idx === -1 ? 999 : idx;
   }
+
+  // ===============================
+  // BUY BUCKET COLOR MAP (FIX)
+  // ===============================
+  const BUCKET_COLOR = {
+    Urgent: "#dc2626",   // Red
+    Medium: "#d97706",   // Amber
+    Low: "#16a34a"       // Green
+  };
 
   // ===============================
   // CLOSED STYLES
@@ -107,7 +116,6 @@ export function renderDemandReport(data) {
 
   Object.keys(styleSales).forEach(style => {
     let directSum = 0;
-    let styleBuckets = new Set();
 
     Object.keys(skuSales[style] || {}).forEach(sku => {
       const skuSale = skuSales[style][sku];
@@ -119,7 +127,6 @@ export function renderDemandReport(data) {
 
       if (skuDemand > 0) {
         const bucket = getBucket(skuSC);
-        styleBuckets.add(bucket);
         bucketSummary[bucket].styles.add(style);
         bucketSummary[bucket].skus += 1;
         bucketSummary[bucket].demand += skuDemand;
@@ -156,7 +163,7 @@ export function renderDemandReport(data) {
   });
 
   // ===============================
-  // BUY BUCKET SUMMARY TABLE
+  // BUY BUCKET SUMMARY
   // ===============================
   let html = `
     <h3>Buy Bucket Summary</h3>
@@ -175,7 +182,7 @@ export function renderDemandReport(data) {
   ["Urgent","Medium","Low"].forEach(b => {
     html += `
       <tr>
-        <td><b>${b}</b></td>
+        <td style="color:${BUCKET_COLOR[b]};font-weight:700">${b}</td>
         <td>${bucketSummary[b].styles.size}</td>
         <td>${bucketSummary[b].skus}</td>
         <td>${bucketSummary[b].demand}</td>
@@ -186,7 +193,7 @@ export function renderDemandReport(data) {
   html += `</tbody></table><br/>`;
 
   // ===============================
-  // MAIN DEMAND TABLE
+  // MAIN TABLE
   // ===============================
   html += `
     <table class="summary-table">
@@ -221,7 +228,9 @@ export function renderDemandReport(data) {
         <td>${r.drr.toFixed(2)}</td>
         <td>${r.sc.toFixed(1)}</td>
         <td><b>${r.direct}</b></td>
-        <td><b>${r.bucket}</b></td>
+        <td style="color:${BUCKET_COLOR[r.bucket]};font-weight:700">
+          ${r.bucket}
+        </td>
       </tr>
     `;
 
@@ -240,6 +249,8 @@ export function renderDemandReport(data) {
 
       if (skuDemand === 0) return;
 
+      const skuBucket = getBucket(skuSC);
+
       html += `
         <tr class="size-row" data-parent="${r.style}" style="display:none">
           <td></td>
@@ -252,7 +263,9 @@ export function renderDemandReport(data) {
           <td>${skuDRR.toFixed(2)}</td>
           <td>${skuSC.toFixed(1)}</td>
           <td>${skuDemand}</td>
-          <td>${getBucket(skuSC)}</td>
+          <td style="color:${BUCKET_COLOR[skuBucket]};font-weight:600">
+            ${skuBucket}
+          </td>
         </tr>
       `;
     });
@@ -262,7 +275,7 @@ export function renderDemandReport(data) {
   container.innerHTML = html;
 
   // ===============================
-  // EXPAND / COLLAPSE (SAFE)
+  // EXPAND / COLLAPSE
   // ===============================
   container.querySelectorAll(".style-row").forEach(row => {
     row.addEventListener("click", () => {
@@ -271,7 +284,7 @@ export function renderDemandReport(data) {
       row.querySelector(".toggle").textContent = expanded ? "−" : "+";
 
       container
-        .querySelectorAll(`.size-row[data-parent="${style}"]`)
+        .querySelectorAll(\`.size-row[data-parent="\${style}"]\`)
         .forEach(r => {
           r.style.display = expanded ? "table-row" : "none";
         });
