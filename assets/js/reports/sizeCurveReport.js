@@ -1,5 +1,6 @@
 export function renderSizeCurveReport(data) {
   const container = document.getElementById("report-content");
+  if (!container) return;
 
   const sale = data.sale;
   const stock = data.stock;
@@ -24,7 +25,7 @@ export function renderSizeCurveReport(data) {
 
     styleSales[style] = (styleSales[style] || 0) + units;
 
-    if (!sizeSales[style]) sizeSales[style] = {};
+    sizeSales[style] ??= {};
     sizeSales[style][size] = (sizeSales[style][size] || 0) + units;
   });
 
@@ -36,29 +37,28 @@ export function renderSizeCurveReport(data) {
   stock.forEach(r => {
     if (String(r["FC"]).toUpperCase() !== "SELLER") return;
     const style = r["Style ID"];
-    sellerStock[style] = (sellerStock[style] || 0) + Number(r["Units"] || 0);
+    sellerStock[style] =
+      (sellerStock[style] || 0) + Number(r["Units"] || 0);
   });
 
   // ===============================
-  // PREPARE STYLE DATA
+  // PREPARE STYLE DATA (FILTERED)
   // ===============================
-  const styles = Object.keys(styleSales).map(style => {
-    const totalSales = styleSales[style];
-    const drr = totalSales / totalSaleDays;
-    const demand = Math.max(
-      0,
-      Math.round(drr * 45 - (sellerStock[style] || 0))
-    );
+  const styles = Object.keys(styleSales)
+    .map(style => {
+      const totalSales = styleSales[style];
+      const drr = totalSales / totalSaleDays;
+      const demand = Math.max(
+        0,
+        Math.round(drr * 45 - (sellerStock[style] || 0))
+      );
 
-    return {
-      style,
-      totalSales,
-      demand
-    };
-  });
-
-  // Sort by Style Demand High → Low
-  styles.sort((a, b) => b.demand - a.demand);
+      return { style, totalSales, demand };
+    })
+    // ✅ KEY FIX: remove demand <= 0
+    .filter(r => r.demand > 0)
+    // Sort by Style Demand High → Low
+    .sort((a, b) => b.demand - a.demand);
 
   // ===============================
   // BUILD TABLE
@@ -86,21 +86,18 @@ export function renderSizeCurveReport(data) {
   `;
 
   styles.forEach(obj => {
-    const style = obj.style;
-    const styleDemand = obj.demand;
-    const totalSales = obj.totalSales;
+    const { style, totalSales, demand } = obj;
 
     html += `
       <tr>
         <td><b>${style}</b></td>
-        <td><b>${styleDemand}</b></td>
+        <td><b>${demand}</b></td>
     `;
 
     SIZE_ORDER.forEach(size => {
       const sizeSale = (sizeSales[style] || {})[size] || 0;
       const mix = totalSales ? sizeSale / totalSales : 0;
-      const recBuy = Math.round(styleDemand * mix);
-
+      const recBuy = Math.round(demand * mix);
       html += `<td>${recBuy || ""}</td>`;
     });
 
