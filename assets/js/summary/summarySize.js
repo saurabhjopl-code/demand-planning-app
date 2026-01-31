@@ -1,8 +1,7 @@
 // ===================================================
 // Summary 4: Size-wise Analysis Summary (FINAL)
-// Table:
-// Size | Category | Units Sold | Total Units Sold | % Share |
-// Category % Share | Units in Stock | Total Stock
+// Size order FIXED (FS → XS → S … 10XL)
+// Grand Total row INCLUDED
 // ===================================================
 
 export function renderSummarySize(data) {
@@ -13,7 +12,7 @@ export function renderSummarySize(data) {
   const stock = data.stock;
 
   // -------------------------------
-  // Size → Category Mapping
+  // Size → Category Mapping (LOCKED)
   // -------------------------------
   function getCategory(size) {
     if (size === "FS") return "FS";
@@ -47,11 +46,14 @@ export function renderSummarySize(data) {
   // Size-level Stock
   // -------------------------------
   const sizeStock = {};
+  let totalStock = 0;
+
   stock.forEach(r => {
     const size = r["Size"];
     const units = Number(r["Units"] || 0);
 
     sizeStock[size] = (sizeStock[size] || 0) + units;
+    totalStock += units;
   });
 
   // -------------------------------
@@ -76,13 +78,13 @@ export function renderSummarySize(data) {
   });
 
   // -------------------------------
-  // Size Order (LOCKED)
+  // Size Order (FINAL LOCK)
   // -------------------------------
   const sizeOrder = [
+    "FS",
     "XS", "S", "M", "L", "XL", "XXL",
     "3XL", "4XL", "5XL", "6XL",
-    "7XL", "8XL", "9XL", "10XL",
-    "FS"
+    "7XL", "8XL", "9XL", "10XL"
   ];
 
   // -------------------------------
@@ -117,7 +119,7 @@ export function renderSummarySize(data) {
       : "0.00";
 
     sizes.forEach((size, idx) => {
-      const unitsSold = sizeSale[size];
+      const unitsSold = sizeSale[size] || 0;
       const stockUnits = sizeStock[size] || 0;
 
       const sizeShare = totalSale > 0
@@ -128,44 +130,45 @@ export function renderSummarySize(data) {
         <td>${size}</td>`;
 
       if (idx === 0) {
-        html += `
-          <td rowspan="${sizes.length}">${category}</td>
-        `;
+        html += `<td rowspan="${sizes.length}">${category}</td>`;
       }
 
-      html += `
-        <td>${unitsSold}</td>`;
+      html += `<td>${unitsSold}</td>`;
 
       if (idx === 0) {
-        html += `
-          <td rowspan="${sizes.length}">${cat.saleTotal}</td>
-        `;
+        html += `<td rowspan="${sizes.length}">${cat.saleTotal}</td>`;
       }
 
-      html += `
-        <td>${sizeShare}%</td>`;
+      html += `<td>${sizeShare}%</td>`;
 
       if (idx === 0) {
-        html += `
-          <td rowspan="${sizes.length}">${catShare}%</td>
-        `;
+        html += `<td rowspan="${sizes.length}">${catShare}%</td>`;
       }
 
-      html += `
-        <td>${stockUnits}</td>`;
+      html += `<td>${stockUnits}</td>`;
 
       if (idx === 0) {
-        html += `
-          <td rowspan="${sizes.length}">${cat.stockTotal}</td>
-        `;
+        html += `<td rowspan="${sizes.length}">${cat.stockTotal}</td>`;
       }
 
       html += `</tr>`;
     });
   });
 
+  // -------------------------------
+  // Grand Total Row
+  // -------------------------------
   html += `
-      </tbody>
+      <tr style="font-weight:700;background:#f8fafc">
+        <td colspan="2">Grand Total</td>
+        <td>${totalSale}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>${totalStock}</td>
+        <td></td>
+      </tr>
+    </tbody>
     </table>
   `;
 
