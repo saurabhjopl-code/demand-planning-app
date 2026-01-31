@@ -1,10 +1,5 @@
 // ===================================================
-// Demand Report – FINAL (V3.1.3 COLOR FIX)
-// - Buy Bucket Summary
-// - Seller-stock based SC
-// - Size-wise bucket contribution
-// - Closed styles excluded
-// - ONLY color logic added (NO calculation change)
+// Demand Report – FINAL (V3.1.3 SAFE)
 // ===================================================
 
 export function renderDemandReport(data) {
@@ -28,13 +23,19 @@ export function renderDemandReport(data) {
   }
 
   // ===============================
-  // BUY BUCKET COLOR MAP (FIX)
+  // BUY BUCKET COLOR MAP
   // ===============================
   const BUCKET_COLOR = {
-    Urgent: "#dc2626",   // Red
-    Medium: "#d97706",   // Amber
-    Low: "#16a34a"       // Green
+    Urgent: "#dc2626",
+    Medium: "#d97706",
+    Low: "#16a34a"
   };
+
+  function getBucket(sc) {
+    if (sc < 15) return "Urgent";
+    if (sc <= 30) return "Medium";
+    return "Low";
+  }
 
   // ===============================
   // CLOSED STYLES
@@ -95,22 +96,7 @@ export function renderDemandReport(data) {
   });
 
   // ===============================
-  // BUY BUCKET LOGIC
-  // ===============================
-  function getBucket(sc) {
-    if (sc < 15) return "Urgent";
-    if (sc <= 30) return "Medium";
-    return "Low";
-  }
-
-  const bucketSummary = {
-    Urgent: { styles: new Set(), skus: 0, demand: 0 },
-    Medium: { styles: new Set(), skus: 0, demand: 0 },
-    Low: { styles: new Set(), skus: 0, demand: 0 }
-  };
-
-  // ===============================
-  // STYLE LEVEL ROWS
+  // BUILD STYLE ROWS
   // ===============================
   const rows = [];
 
@@ -125,30 +111,27 @@ export function renderDemandReport(data) {
       const skuSC = skuDRR ? sellerStock / skuDRR : 0;
       const skuDemand = Math.max(0, Math.round(skuDRR * 45 - sellerStock));
 
-      if (skuDemand > 0) {
-        const bucket = getBucket(skuSC);
-        bucketSummary[bucket].styles.add(style);
-        bucketSummary[bucket].skus += 1;
-        bucketSummary[bucket].demand += skuDemand;
-        directSum += skuDemand;
-      }
+      directSum += skuDemand;
     });
 
     if (directSum === 0) return;
 
     const sales = styleSales[style];
     const seller = styleSeller[style] || 0;
+    const fc = styleFC[style] || 0;
+    const total = fc + seller;
+
     const drr = sales / totalSaleDays;
     const sc = drr ? seller / drr : 0;
 
     rows.push({
       style,
       sales,
+      fc,
+      seller,
+      total,
       drr,
       sc,
-      seller,
-      fc: styleFC[style] || 0,
-      total: (styleFC[style] || 0) + seller,
       direct: directSum,
       bucket: getBucket(sc)
     });
@@ -163,39 +146,9 @@ export function renderDemandReport(data) {
   });
 
   // ===============================
-  // BUY BUCKET SUMMARY
+  // RENDER TABLE
   // ===============================
   let html = `
-    <h3>Buy Bucket Summary</h3>
-    <table class="summary-table">
-      <thead>
-        <tr>
-          <th>Buy Bucket</th>
-          <th># of Styles</th>
-          <th># of SKUs</th>
-          <th>Total Demand</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  ["Urgent","Medium","Low"].forEach(b => {
-    html += `
-      <tr>
-        <td style="color:${BUCKET_COLOR[b]};font-weight:700">${b}</td>
-        <td>${bucketSummary[b].styles.size}</td>
-        <td>${bucketSummary[b].skus}</td>
-        <td>${bucketSummary[b].demand}</td>
-      </tr>
-    `;
-  });
-
-  html += `</tbody></table><br/>`;
-
-  // ===============================
-  // MAIN TABLE
-  // ===============================
-  html += `
     <table class="summary-table">
       <thead>
         <tr>
@@ -246,7 +199,6 @@ export function renderDemandReport(data) {
       const skuDRR = skuSale / totalSaleDays;
       const skuSC = skuDRR ? skuSellerStock / skuDRR : 0;
       const skuDemand = Math.max(0, Math.round(skuDRR * 45 - skuSellerStock));
-
       if (skuDemand === 0) return;
 
       const skuBucket = getBucket(skuSC);
@@ -275,7 +227,7 @@ export function renderDemandReport(data) {
   container.innerHTML = html;
 
   // ===============================
-  // EXPAND / COLLAPSE
+  // EXPAND / COLLAPSE (SAFE)
   // ===============================
   container.querySelectorAll(".style-row").forEach(row => {
     row.addEventListener("click", () => {
@@ -284,7 +236,7 @@ export function renderDemandReport(data) {
       row.querySelector(".toggle").textContent = expanded ? "−" : "+";
 
       container
-        .querySelectorAll(\`.size-row[data-parent="\${style}"]\`)
+        .querySelectorAll(`.size-row[data-parent="${style}"]`)
         .forEach(r => {
           r.style.display = expanded ? "table-row" : "none";
         });
