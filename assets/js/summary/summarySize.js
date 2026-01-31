@@ -1,7 +1,6 @@
 // ===================================================
-// Summary 4: Size-wise Analysis Summary (FINAL)
-// Size order FIXED (FS → XS → S … 10XL)
-// Grand Total row INCLUDED
+// Summary 4: Size-wise Analysis Summary (FINAL FIX)
+// GLOBAL SIZE SEQUENCE ENFORCED
 // ===================================================
 
 export function renderSummarySize(data) {
@@ -12,7 +11,7 @@ export function renderSummarySize(data) {
   const stock = data.stock;
 
   // -------------------------------
-  // Size → Category Mapping (LOCKED)
+  // Size → Category Mapping
   // -------------------------------
   function getCategory(size) {
     if (size === "FS") return "FS";
@@ -29,56 +28,7 @@ export function renderSummarySize(data) {
   }
 
   // -------------------------------
-  // Size-level Sales
-  // -------------------------------
-  const sizeSale = {};
-  let totalSale = 0;
-
-  sale.forEach(r => {
-    const size = r["Size"];
-    const units = Number(r["Units"] || 0);
-
-    sizeSale[size] = (sizeSale[size] || 0) + units;
-    totalSale += units;
-  });
-
-  // -------------------------------
-  // Size-level Stock
-  // -------------------------------
-  const sizeStock = {};
-  let totalStock = 0;
-
-  stock.forEach(r => {
-    const size = r["Size"];
-    const units = Number(r["Units"] || 0);
-
-    sizeStock[size] = (sizeStock[size] || 0) + units;
-    totalStock += units;
-  });
-
-  // -------------------------------
-  // Category Aggregation
-  // -------------------------------
-  const categoryData = {};
-
-  Object.keys(sizeSale).forEach(size => {
-    const cat = getCategory(size);
-
-    if (!categoryData[cat]) {
-      categoryData[cat] = {
-        sizes: [],
-        saleTotal: 0,
-        stockTotal: 0
-      };
-    }
-
-    categoryData[cat].sizes.push(size);
-    categoryData[cat].saleTotal += sizeSale[size];
-    categoryData[cat].stockTotal += sizeStock[size] || 0;
-  });
-
-  // -------------------------------
-  // Size Order (FINAL LOCK)
+  // GLOBAL SIZE ORDER (LOCKED)
   // -------------------------------
   const sizeOrder = [
     "FS",
@@ -86,6 +36,54 @@ export function renderSummarySize(data) {
     "3XL", "4XL", "5XL", "6XL",
     "7XL", "8XL", "9XL", "10XL"
   ];
+
+  // -------------------------------
+  // Aggregate Sales
+  // -------------------------------
+  const sizeSale = {};
+  let totalSale = 0;
+
+  sale.forEach(r => {
+    const size = r["Size"];
+    const units = Number(r["Units"] || 0);
+    sizeSale[size] = (sizeSale[size] || 0) + units;
+    totalSale += units;
+  });
+
+  // -------------------------------
+  // Aggregate Stock
+  // -------------------------------
+  const sizeStock = {};
+  let totalStock = 0;
+
+  stock.forEach(r => {
+    const size = r["Size"];
+    const units = Number(r["Units"] || 0);
+    sizeStock[size] = (sizeStock[size] || 0) + units;
+    totalStock += units;
+  });
+
+  // -------------------------------
+  // Category Aggregates
+  // -------------------------------
+  const categoryTotals = {};
+
+  sizeOrder.forEach(size => {
+    if (!sizeSale[size]) return;
+
+    const cat = getCategory(size);
+    if (!categoryTotals[cat]) {
+      categoryTotals[cat] = {
+        sale: 0,
+        stock: 0,
+        sizes: []
+      };
+    }
+
+    categoryTotals[cat].sale += sizeSale[size];
+    categoryTotals[cat].stock += sizeStock[size] || 0;
+    categoryTotals[cat].sizes.push(size);
+  });
 
   // -------------------------------
   // Build Table
@@ -108,69 +106,80 @@ export function renderSummarySize(data) {
       <tbody>
   `;
 
-  Object.keys(categoryData).forEach(category => {
-    const cat = categoryData[category];
-    const sizes = cat.sizes.sort(
-      (a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b)
-    );
+  const categoryRowUsed = {};
 
-    const catShare = totalSale > 0
-      ? ((cat.saleTotal / totalSale) * 100).toFixed(2)
+  sizeOrder.forEach(size => {
+    if (!sizeSale[size]) return;
+
+    const cat = getCategory(size);
+    const unitsSold = sizeSale[size];
+    const stockUnits = sizeStock[size] || 0;
+
+    const sizeShare = totalSale > 0
+      ? ((unitsSold / totalSale) * 100).toFixed(2)
       : "0.00";
 
-    sizes.forEach((size, idx) => {
-      const unitsSold = sizeSale[size] || 0;
-      const stockUnits = sizeStock[size] || 0;
+    const catShare = totalSale > 0
+      ? ((categoryTotals[cat].sale / totalSale) * 100).toFixed(2)
+      : "0.00";
 
-      const sizeShare = totalSale > 0
-        ? ((unitsSold / totalSale) * 100).toFixed(2)
-        : "0.00";
+    html += `<tr>
+      <td>${size}</td>`;
 
-      html += `<tr>
-        <td>${size}</td>`;
+    // Category column (rowspan once)
+    if (!categoryRowUsed[cat]) {
+      html += `<td rowspan="${categoryTotals[cat].sizes.length}">${cat}</td>`;
+      categoryRowUsed[cat] = true;
+    }
 
-      if (idx === 0) {
-        html += `<td rowspan="${sizes.length}">${category}</td>`;
-      }
+    html += `
+      <td>${unitsSold}</td>`;
 
-      html += `<td>${unitsSold}</td>`;
+    // Category total sale (rowspan once)
+    if (categoryRowUsed[cat] === true) {
+      html += `<td rowspan="${categoryTotals[cat].sizes.length}">
+        ${categoryTotals[cat].sale}
+      </td>`;
+    }
 
-      if (idx === 0) {
-        html += `<td rowspan="${sizes.length}">${cat.saleTotal}</td>`;
-      }
+    html += `<td>${sizeShare}%</td>`;
 
-      html += `<td>${sizeShare}%</td>`;
+    // Category % share (rowspan once)
+    if (categoryRowUsed[cat] === true) {
+      html += `<td rowspan="${categoryTotals[cat].sizes.length}">
+        ${catShare}%
+      </td>`;
+    }
 
-      if (idx === 0) {
-        html += `<td rowspan="${sizes.length}">${catShare}%</td>`;
-      }
+    html += `
+      <td>${stockUnits}</td>`;
 
-      html += `<td>${stockUnits}</td>`;
+    // Category total stock (rowspan once)
+    if (categoryRowUsed[cat] === true) {
+      html += `<td rowspan="${categoryTotals[cat].sizes.length}">
+        ${categoryTotals[cat].stock}
+      </td>`;
+      categoryRowUsed[cat] = "done";
+    }
 
-      if (idx === 0) {
-        html += `<td rowspan="${sizes.length}">${cat.stockTotal}</td>`;
-      }
-
-      html += `</tr>`;
-    });
+    html += `</tr>`;
   });
 
   // -------------------------------
   // Grand Total Row
   // -------------------------------
   html += `
-      <tr style="font-weight:700;background:#f8fafc">
-        <td colspan="2">Grand Total</td>
-        <td>${totalSale}</td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td>${totalStock}</td>
-        <td></td>
-      </tr>
-    </tbody>
-    </table>
+    <tr style="font-weight:700;background:#f8fafc">
+      <td colspan="2">Grand Total</td>
+      <td>${totalSale}</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>${totalStock}</td>
+      <td></td>
+    </tr>
   `;
 
+  html += `</tbody></table>`;
   container.innerHTML = html;
 }
