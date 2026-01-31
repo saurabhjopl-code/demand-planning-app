@@ -1,8 +1,7 @@
 // ===================================================
-// Summary 4: Size-wise Analysis Summary (FINAL)
-// Table:
-// Size | Category | Units Sold | Total Units Sold | % Share |
-// Category % Share | Units in Stock | Total Stock
+// Summary 4: Size-wise Analysis
+// Size order FIXED
+// Grand Total row added
 // ===================================================
 
 export function renderSummarySize(data) {
@@ -13,80 +12,93 @@ export function renderSummarySize(data) {
   const stock = data.stock;
 
   // -------------------------------
-  // Size → Category Mapping
+  // REQUIRED SIZE SEQUENCE
   // -------------------------------
-  function getCategory(size) {
+  const SIZE_ORDER = [
+    "FS",
+    "S", "M", "L", "XL", "XXL",
+    "3XL", "4XL", "5XL", "6XL",
+    "7XL", "8XL", "9XL", "10XL"
+  ];
+
+  // -------------------------------
+  // Size → Category Map (LOCKED)
+  // -------------------------------
+  const sizeCategory = size => {
     if (size === "FS") return "FS";
-
-    const normal = ["XS", "S", "M", "L", "XL", "XXL"];
-    const plus1 = ["3XL", "4XL", "5XL", "6XL"];
-    const plus2 = ["7XL", "8XL", "9XL", "10XL"];
-
-    if (normal.includes(size)) return "Normal";
-    if (plus1.includes(size)) return "PLUS 1";
-    if (plus2.includes(size)) return "PLUS 2";
-
-    return "Other";
-  }
+    if (["3XL", "4XL", "5XL", "6XL"].includes(size)) return "PLUS 1";
+    if (["7XL", "8XL", "9XL", "10XL"].includes(size)) return "PLUS 2";
+    return "Normal";
+  };
 
   // -------------------------------
-  // Size-level Sales
+  // Aggregate Sales by Size
   // -------------------------------
-  const sizeSale = {};
-  let totalSale = 0;
+  const sizeSales = {};
+  let totalUnitsSold = 0;
 
   sale.forEach(r => {
     const size = r["Size"];
     const units = Number(r["Units"] || 0);
 
-    sizeSale[size] = (sizeSale[size] || 0) + units;
-    totalSale += units;
+    sizeSales[size] = (sizeSales[size] || 0) + units;
+    totalUnitsSold += units;
   });
 
   // -------------------------------
-  // Size-level Stock
+  // Aggregate Stock by Size
   // -------------------------------
   const sizeStock = {};
+  let totalStock = 0;
+
   stock.forEach(r => {
     const size = r["Size"];
     const units = Number(r["Units"] || 0);
 
     sizeStock[size] = (sizeStock[size] || 0) + units;
+    totalStock += units;
   });
 
   // -------------------------------
-  // Category Aggregation
+  // Category Totals
   // -------------------------------
-  const categoryData = {};
+  const categoryTotals = {};
 
-  Object.keys(sizeSale).forEach(size => {
-    const cat = getCategory(size);
-
-    if (!categoryData[cat]) {
-      categoryData[cat] = {
-        sizes: [],
-        saleTotal: 0,
-        stockTotal: 0
-      };
-    }
-
-    categoryData[cat].sizes.push(size);
-    categoryData[cat].saleTotal += sizeSale[size];
-    categoryData[cat].stockTotal += sizeStock[size] || 0;
+  Object.keys(sizeSales).forEach(size => {
+    const cat = sizeCategory(size);
+    categoryTotals[cat] = (categoryTotals[cat] || 0) + sizeSales[size];
   });
 
   // -------------------------------
-  // Size Order (LOCKED)
+  // Build Rows in REQUIRED ORDER
   // -------------------------------
-  const sizeOrder = [
-    "XS", "S", "M", "L", "XL", "XXL",
-    "3XL", "4XL", "5XL", "6XL",
-    "7XL", "8XL", "9XL", "10XL",
-    "FS"
-  ];
+  const rows = [];
+
+  SIZE_ORDER.forEach(size => {
+    if (!sizeSales[size] && !sizeStock[size]) return;
+
+    const cat = sizeCategory(size);
+    const unitsSold = sizeSales[size] || 0;
+    const unitsInStock = sizeStock[size] || 0;
+
+    rows.push({
+      size,
+      category: cat,
+      unitsSold,
+      totalUnitsSold: categoryTotals[cat] || 0,
+      sizeShare: totalUnitsSold
+        ? ((unitsSold / totalUnitsSold) * 100).toFixed(2)
+        : "0.00",
+      categoryShare: totalUnitsSold
+        ? (((categoryTotals[cat] || 0) / totalUnitsSold) * 100).toFixed(2)
+        : "0.00",
+      unitsInStock,
+      totalStock
+    });
+  });
 
   // -------------------------------
-  // Build Table
+  // Render Table
   // -------------------------------
   let html = `
     <h3>Size-wise Analysis</h3>
@@ -106,66 +118,35 @@ export function renderSummarySize(data) {
       <tbody>
   `;
 
-  Object.keys(categoryData).forEach(category => {
-    const cat = categoryData[category];
-    const sizes = cat.sizes.sort(
-      (a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b)
-    );
-
-    const catShare = totalSale > 0
-      ? ((cat.saleTotal / totalSale) * 100).toFixed(2)
-      : "0.00";
-
-    sizes.forEach((size, idx) => {
-      const unitsSold = sizeSale[size];
-      const stockUnits = sizeStock[size] || 0;
-
-      const sizeShare = totalSale > 0
-        ? ((unitsSold / totalSale) * 100).toFixed(2)
-        : "0.00";
-
-      html += `<tr>
-        <td>${size}</td>`;
-
-      if (idx === 0) {
-        html += `
-          <td rowspan="${sizes.length}">${category}</td>
-        `;
-      }
-
-      html += `
-        <td>${unitsSold}</td>`;
-
-      if (idx === 0) {
-        html += `
-          <td rowspan="${sizes.length}">${cat.saleTotal}</td>
-        `;
-      }
-
-      html += `
-        <td>${sizeShare}%</td>`;
-
-      if (idx === 0) {
-        html += `
-          <td rowspan="${sizes.length}">${catShare}%</td>
-        `;
-      }
-
-      html += `
-        <td>${stockUnits}</td>`;
-
-      if (idx === 0) {
-        html += `
-          <td rowspan="${sizes.length}">${cat.stockTotal}</td>
-        `;
-      }
-
-      html += `</tr>`;
-    });
+  rows.forEach(r => {
+    html += `
+      <tr>
+        <td>${r.size}</td>
+        <td>${r.category}</td>
+        <td>${r.unitsSold}</td>
+        <td>${r.totalUnitsSold}</td>
+        <td>${r.sizeShare}%</td>
+        <td>${r.categoryShare}%</td>
+        <td>${r.unitsInStock}</td>
+        <td>${r.totalStock}</td>
+      </tr>
+    `;
   });
 
+  // -------------------------------
+  // Grand Total Row
+  // -------------------------------
   html += `
-      </tbody>
+      <tr style="font-weight:700;background:#f8fafc">
+        <td colspan="2">Grand Total</td>
+        <td>${totalUnitsSold}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>${totalStock}</td>
+        <td></td>
+      </tr>
+    </tbody>
     </table>
   `;
 
