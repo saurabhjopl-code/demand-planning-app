@@ -1,8 +1,5 @@
 // ===================================================
-// Demand Report – FINAL (V3.2.3)
-// - Buy Bucket Summary + Grand Total
-// - Main Demand Table unchanged
-// - Seller-stock based SC
+// Demand vs Production Report – FINAL (V3.2.4)
 // ===================================================
 
 export function renderDemandReport(data) {
@@ -10,34 +7,36 @@ export function renderDemandReport(data) {
   if (!container) return;
   container.innerHTML = "";
 
-  const { sale, stock, totalSaleDays, styleStatus } = data;
+  const {
+    sale,
+    stock,
+    production,
+    totalSaleDays,
+    styleStatus
+  } = data;
 
   // ===============================
-  // SIZE ORDER (LOCKED)
+  // SIZE NORMALIZATION
   // ===============================
-  const SIZE_ORDER = [
-    "FS","XS","S","M","L","XL","XXL",
-    "3XL","4XL","5XL","6XL","7XL","8XL","9XL","10XL"
+  const ALLOWED_SIZES = [
+    "XS","S","M","L","XL","XXL",
+    "3XL","4XL","5XL","6XL",
+    "7XL","8XL","9XL","10XL"
   ];
 
-  function sizeIndex(size) {
-    const idx = SIZE_ORDER.indexOf(String(size || "").toUpperCase());
-    return idx === -1 ? 999 : idx;
+  function normalizeSize(size) {
+    const s = String(size || "").toUpperCase();
+    return ALLOWED_SIZES.includes(s) ? s : "FS";
   }
 
   // ===============================
-  // BUY BUCKET COLORS
+  // BUY BUCKET (PENDANCY BASED)
   // ===============================
-  const BUCKET_COLOR = {
-    Urgent: "#dc2626",
-    Medium: "#d97706",
-    Low: "#16a34a"
-  };
-
-  function getBucket(sc) {
-    if (sc < 15) return "Urgent";
-    if (sc <= 30) return "Medium";
-    return "Low";
+  function getBucket(p) {
+    if (p < 0) return { label: "Over Production", color: "#2563eb" };
+    if (p > 500) return { label: "Urgent", color: "#dc2626" };
+    if (p >= 100) return { label: "Medium", color: "#d97706" };
+    return { label: "Low", color: "#16a34a" };
   }
 
   // ===============================
@@ -50,237 +49,142 @@ export function renderDemandReport(data) {
   );
 
   // ===============================
-  // SALES AGGREGATION
+  // SALES
   // ===============================
-  const styleSales = {};
   const skuSales = {};
-
   sale.forEach(r => {
-    const style = r["Style ID"];
-    if (closedStyles.has(style)) return;
-
+    if (closedStyles.has(r["Style ID"])) return;
     const sku = r["Uniware SKU"];
-    const units = Number(r["Units"] || 0);
-
-    styleSales[style] = (styleSales[style] || 0) + units;
-    skuSales[style] ??= {};
-    skuSales[style][sku] = (skuSales[style][sku] || 0) + units;
+    skuSales[sku] = (skuSales[sku] || 0) + Number(r["Units"] || 0);
   });
 
   // ===============================
-  // STOCK AGGREGATION
+  // SELLER STOCK
   // ===============================
-  const styleFC = {};
-  const styleSeller = {};
-  const skuFC = {};
-  const skuSeller = {};
-  const skuSizeMap = {};
-
+  const skuSellerStock = {};
   stock.forEach(r => {
-    const style = r["Style ID"];
-    if (closedStyles.has(style)) return;
-
+    if (closedStyles.has(r["Style ID"])) return;
+    if (String(r["FC"]).toUpperCase() !== "SELLER") return;
     const sku = r["Uniware SKU"];
-    const size = r["Size"];
-    const fc = String(r["FC"] || "").toUpperCase();
-    const units = Number(r["Units"] || 0);
-
-    skuSizeMap[sku] = size;
-
-    if (fc === "SELLER") {
-      styleSeller[style] = (styleSeller[style] || 0) + units;
-      skuSeller[style] ??= {};
-      skuSeller[style][sku] = (skuSeller[style][sku] || 0) + units;
-    } else {
-      styleFC[style] = (styleFC[style] || 0) + units;
-      skuFC[style] ??= {};
-      skuFC[style][sku] = (skuFC[style][sku] || 0) + units;
-    }
+    skuSellerStock[sku] =
+      (skuSellerStock[sku] || 0) + Number(r["Units"] || 0);
   });
 
   // ===============================
-  // BUILD ROWS + BUCKET SUMMARY
+  // PRODUCTION MAP
   // ===============================
-  const rows = [];
-  const bucketSummary = {
-    Urgent: { styles: new Set(), skus: 0, demand: 0 },
-    Medium: { styles: new Set(), skus: 0, demand: 0 },
-    Low: { styles: new Set(), skus: 0, demand: 0 }
-  };
+  const skuProduction = {};
+  production.forEach(r => {
+    const sku = r["Uniware SKU"];
+    skuProduction[sku] =
+      (skuProduction[sku] || 0) + Number(r["In Production"] || 0);
+  });
 
-  Object.keys(styleSales).forEach(style => {
-    let directSum = 0;
+  // ===============================
+  // SKU MASTER SET
+  // ===============================
+  const allSkus = new Set([
+    ...Object.keys(skuSales),
+    ...Object.keys(skuProduction)
+  ]);
 
-    Object.keys(skuSales[style] || {}).forEach(sku => {
-      const skuSale = skuSales[style][sku];
-      const sellerStock = (skuSeller[style] || {})[sku] || 0;
+  // ===============================
+  // AGGREGATE BY STYLE
+  // ===============================
+  const styleMap = {};
 
-      const skuDRR = skuSale / totalSaleDays;
-      const skuSC = skuDRR ? sellerStock / skuDRR : 0;
-      const skuDemand = Math.max(0, Math.round(skuDRR * 45 - sellerStock));
+  allSkus.forEach(sku => {
+    const [styleRaw, sizeRaw] = sku.split("-");
+    const style = styleRaw;
+    if (closedStyles.has(style)) return;
 
-      if (skuDemand > 0) {
-        const bucket = getBucket(skuSC);
-        bucketSummary[bucket].styles.add(style);
-        bucketSummary[bucket].skus += 1;
-        bucketSummary[bucket].demand += skuDemand;
-        directSum += skuDemand;
-      }
-    });
-
-    if (directSum === 0) return;
-
-    const sales = styleSales[style];
-    const seller = styleSeller[style] || 0;
-    const fc = styleFC[style] || 0;
-    const total = fc + seller;
+    const size = normalizeSize(sizeRaw);
+    const sales = skuSales[sku] || 0;
+    const seller = skuSellerStock[sku] || 0;
+    const inProd = skuProduction[sku] || 0;
 
     const drr = sales / totalSaleDays;
-    const sc = drr ? seller / drr : 0;
+    const direct = Math.round(drr * 45 - seller);
+    const pending = direct - inProd;
 
-    rows.push({
+    styleMap[style] ??= {
       style,
+      skus: [],
+      sales: 0,
+      seller: 0,
+      production: 0,
+      direct: 0,
+      pending: 0
+    };
+
+    styleMap[style].skus.push({
+      sku,
+      size,
       sales,
-      fc,
       seller,
-      total,
-      drr,
-      sc,
-      direct: directSum,
-      bucket: getBucket(sc)
+      inProd,
+      direct,
+      pending,
+      bucket: getBucket(pending)
     });
+
+    styleMap[style].sales += sales;
+    styleMap[style].seller += seller;
+    styleMap[style].production += inProd;
+    styleMap[style].direct += direct;
+    styleMap[style].pending += pending;
   });
 
   // ===============================
-  // SORT PRIORITY
+  // BUILD TABLE
   // ===============================
-  rows.sort((a, b) => {
-    if (b.drr !== a.drr) return b.drr - a.drr;
-    return a.sc - b.sc;
-  });
-
-  // ===============================
-  // BUY BUCKET SUMMARY TABLE
-  // ===============================
-  const totalStyles = new Set();
-  let totalSkus = 0;
-  let totalDemand = 0;
-
-  ["Urgent","Medium","Low"].forEach(b => {
-    bucketSummary[b].styles.forEach(s => totalStyles.add(s));
-    totalSkus += bucketSummary[b].skus;
-    totalDemand += bucketSummary[b].demand;
-  });
-
   let html = `
-    <h3>Buy Bucket Summary</h3>
-    <table class="summary-table">
-      <thead>
-        <tr>
-          <th>Buy Bucket</th>
-          <th># of Styles</th>
-          <th># of SKUs</th>
-          <th>Total Demand</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  ["Urgent","Medium","Low"].forEach(b => {
-    html += `
-      <tr>
-        <td style="color:${BUCKET_COLOR[b]};font-weight:700">${b}</td>
-        <td>${bucketSummary[b].styles.size}</td>
-        <td>${bucketSummary[b].skus}</td>
-        <td>${bucketSummary[b].demand}</td>
-      </tr>
-    `;
-  });
-
-  html += `
-    <tr style="font-weight:700;background:#f8fafc">
-      <td>Grand Total</td>
-      <td>${totalStyles.size}</td>
-      <td>${totalSkus}</td>
-      <td>${totalDemand}</td>
-    </tr>
-  </tbody>
-</table>
-<br/>
-  `;
-
-  // ===============================
-  // MAIN DEMAND TABLE (UNCHANGED)
-  // ===============================
-  html += `
     <table class="summary-table">
       <thead>
         <tr>
           <th></th>
-          <th>Priority</th>
-          <th>Style ID / SKU</th>
+          <th>Style / SKU</th>
           <th>Sales</th>
-          <th>FC Stock</th>
           <th>Seller Stock</th>
-          <th>Total Stock</th>
-          <th>DRR</th>
-          <th>SC</th>
           <th>Direct Demand</th>
+          <th>In Production</th>
+          <th>Pendancy</th>
           <th>Buy Bucket</th>
         </tr>
       </thead>
       <tbody>
   `;
 
-  rows.forEach((r, idx) => {
+  Object.values(styleMap).forEach(style => {
+    const bucket = getBucket(style.pending);
+
     html += `
-      <tr class="style-row" data-style="${r.style}">
+      <tr class="style-row" data-style="${style.style}">
         <td class="toggle">+</td>
-        <td>${idx + 1}</td>
-        <td><b>${r.style}</b></td>
-        <td>${r.sales}</td>
-        <td>${r.fc}</td>
-        <td>${r.seller}</td>
-        <td>${r.total}</td>
-        <td>${r.drr.toFixed(2)}</td>
-        <td>${r.sc.toFixed(1)}</td>
-        <td><b>${r.direct}</b></td>
-        <td style="color:${BUCKET_COLOR[r.bucket]};font-weight:700">
-          ${r.bucket}
+        <td><b>${style.style}</b></td>
+        <td>${style.sales}</td>
+        <td>${style.seller}</td>
+        <td>${style.direct}</td>
+        <td>${style.production}</td>
+        <td><b>${style.pending}</b></td>
+        <td style="color:${bucket.color};font-weight:700">
+          ${bucket.label}
         </td>
       </tr>
     `;
 
-    const skus = Object.keys(skuSales[r.style] || {}).sort(
-      (a, b) => sizeIndex(skuSizeMap[a]) - sizeIndex(skuSizeMap[b])
-    );
-
-    skus.forEach(sku => {
-      const skuSale = skuSales[r.style][sku];
-      const skuSellerStock = (skuSeller[r.style] || {})[sku] || 0;
-      const skuFCStock = (skuFC[r.style] || {})[sku] || 0;
-
-      const skuDRR = skuSale / totalSaleDays;
-      const skuSC = skuDRR ? skuSellerStock / skuDRR : 0;
-      const skuDemand = Math.max(0, Math.round(skuDRR * 45 - skuSellerStock));
-      if (skuDemand === 0) return;
-
-      const skuBucket = getBucket(skuSC);
-
+    style.skus.forEach(s => {
       html += `
-        <tr class="size-row" data-parent="${r.style}" style="display:none">
+        <tr class="size-row" data-parent="${style.style}" style="display:none">
           <td></td>
-          <td></td>
-          <td>${sku}</td>
-          <td>${skuSale}</td>
-          <td>${skuFCStock}</td>
-          <td>${skuSellerStock}</td>
-          <td>${skuFCStock + skuSellerStock}</td>
-          <td>${skuDRR.toFixed(2)}</td>
-          <td>${skuSC.toFixed(1)}</td>
-          <td>${skuDemand}</td>
-          <td style="color:${BUCKET_COLOR[skuBucket]};font-weight:600">
-            ${skuBucket}
+          <td>${s.sku}</td>
+          <td>${s.sales}</td>
+          <td>${s.seller}</td>
+          <td>${s.direct}</td>
+          <td>${s.inProd}</td>
+          <td>${s.pending}</td>
+          <td style="color:${s.bucket.color};font-weight:600">
+            ${s.bucket.label}
           </td>
         </tr>
       `;
