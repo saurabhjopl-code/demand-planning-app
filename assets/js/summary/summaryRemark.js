@@ -1,5 +1,5 @@
 // ===================================================
-// Summary 5: Company Remark-wise Sale (FINAL)
+// Summary 5: Company Remark-wise Sale (FINAL + GRAND TOTAL)
 // Table:
 // Company Remark | Total Units Sold | DRR | Total Stock | SC
 //
@@ -64,9 +64,12 @@ export function renderSummaryRemark(data) {
   ];
 
   // -------------------------------
-  // Build Rows
+  // Build Rows + Grand Totals
   // -------------------------------
   const rows = [];
+
+  let grandSale = 0;
+  let grandStock = 0;
 
   Object.keys(remarkSaleMap).forEach(remark => {
     const totalUnitsSold = remarkSaleMap[remark];
@@ -81,6 +84,9 @@ export function renderSummaryRemark(data) {
     } else if (drr > 0) {
       sc = (totalStock / drr).toFixed(0);
     }
+
+    grandSale += totalUnitsSold;
+    grandStock += totalStock;
 
     rows.push({
       remark,
@@ -104,6 +110,19 @@ export function renderSummaryRemark(data) {
 
     return aIndex - bIndex;
   });
+
+  // -------------------------------
+  // Grand Total Calculations
+  // -------------------------------
+  const grandDRR =
+    totalSaleDays > 0 ? (grandSale / totalSaleDays).toFixed(2) : "0.00";
+
+  let grandSC = 0;
+  if (grandDRR === "0.00" && grandStock > 0) {
+    grandSC = "∞";
+  } else if (Number(grandDRR) > 0) {
+    grandSC = (grandStock / Number(grandDRR)).toFixed(0);
+  }
 
   // -------------------------------
   // Build Table HTML
@@ -135,8 +154,18 @@ export function renderSummaryRemark(data) {
     `;
   });
 
+  // -------------------------------
+  // Grand Total Row
+  // -------------------------------
   html += `
-      </tbody>
+      <tr style="font-weight:700;background:#f8fafc">
+        <td>Grand Total</td>
+        <td>${grandSale}</td>
+        <td>${grandDRR}</td>
+        <td>${grandStock}</td>
+        <td>${grandSC}</td>
+      </tr>
+    </tbody>
     </table>
   `;
 
