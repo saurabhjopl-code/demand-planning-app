@@ -1,6 +1,16 @@
+// ===================================================
+// Demand Report – FINAL (V3.1.4 SAFE)
+// - Buy Bucket Summary (Top Section)
+// - Seller-stock based SC
+// - Size-wise bucket contribution
+// - Closed styles excluded
+// - FULL SYNTAX SAFE (NO APP BREAK)
+// ===================================================
+
 export function renderDemandReport(data) {
   const container = document.getElementById("report-content");
   if (!container) return;
+  container.innerHTML = "";
 
   const { sale, stock, totalSaleDays, styleStatus } = data;
 
@@ -18,7 +28,7 @@ export function renderDemandReport(data) {
   }
 
   // ===============================
-  // CLOSED STYLE FILTER
+  // CLOSED STYLES
   // ===============================
   const closedStyles = new Set(
     styleStatus
@@ -76,74 +86,69 @@ export function renderDemandReport(data) {
   });
 
   // ===============================
-  // BUY BUCKET LOGIC (LOCKED)
+  // BUY BUCKET LOGIC
   // ===============================
   function getBucket(sc) {
-    if (sc < 15) return { label: "Urgent", color: "#dc2626" };
-    if (sc <= 30) return { label: "Medium", color: "#d97706" };
-    return { label: "Low", color: "#16a34a" };
+    if (sc < 15) return "Urgent";
+    if (sc <= 30) return "Medium";
+    return "Low";
   }
 
-  // ===============================
-  // STYLE LEVEL CALCULATION
-  // ===============================
-  let rows = [];
-
-  // Bucket summary accumulators
   const bucketSummary = {
     Urgent: { styles: new Set(), skus: 0, demand: 0 },
     Medium: { styles: new Set(), skus: 0, demand: 0 },
     Low: { styles: new Set(), skus: 0, demand: 0 }
   };
 
+  // ===============================
+  // STYLE LEVEL ROWS
+  // ===============================
+  const rows = [];
+
   Object.keys(styleSales).forEach(style => {
-    const sales = styleSales[style];
-    const fc = styleFC[style] || 0;
-    const seller = styleSeller[style] || 0;
-    const total = fc + seller;
-
-    const drr = sales / totalSaleDays;
-    const sc = drr ? seller / drr : 0;
-
     let directSum = 0;
+    let styleBuckets = new Set();
 
     Object.keys(skuSales[style] || {}).forEach(sku => {
       const skuSale = skuSales[style][sku];
-      const skuSellerStock = (skuSeller[style] || {})[sku] || 0;
+      const sellerStock = (skuSeller[style] || {})[sku] || 0;
+
       const skuDRR = skuSale / totalSaleDays;
-      const skuDirect = Math.max(
-        0,
-        Math.round(skuDRR * 45 - skuSellerStock)
-      );
+      const skuSC = skuDRR ? sellerStock / skuDRR : 0;
+      const skuDemand = Math.max(0, Math.round(skuDRR * 45 - sellerStock));
 
-      if (skuDirect > 0) {
-        const skuSC = skuDRR ? skuSellerStock / skuDRR : 0;
-        const bucket = getBucket(skuSC).label;
-
+      if (skuDemand > 0) {
+        const bucket = getBucket(skuSC);
+        styleBuckets.add(bucket);
         bucketSummary[bucket].styles.add(style);
         bucketSummary[bucket].skus += 1;
-        bucketSummary[bucket].demand += skuDirect;
+        bucketSummary[bucket].demand += skuDemand;
+        directSum += skuDemand;
       }
-
-      directSum += skuDirect;
     });
 
     if (directSum === 0) return;
 
+    const sales = styleSales[style];
+    const seller = styleSeller[style] || 0;
+    const drr = sales / totalSaleDays;
+    const sc = drr ? seller / drr : 0;
+
     rows.push({
       style,
       sales,
-      fc,
-      seller,
-      total,
       drr,
       sc,
-      direct: directSum
+      seller,
+      fc: styleFC[style] || 0,
+      total: (styleFC[style] || 0) + seller,
+      direct: directSum,
+      bucket: getBucket(sc)
     });
   });
 
   // ===============================
-  // PRIORITY SORT
+  // SORT PRIORITY
   // ===============================
   rows.sort((a, b) => {
     if (b.drr !== a.drr) return b.drr - a.drr;
@@ -151,10 +156,11 @@ export function renderDemandReport(data) {
   });
 
   // ===============================
-  // RENDER BUY BUCKET SUMMARY
+  // BUY BUCKET SUMMARY TABLE
   // ===============================
-  let summaryHTML = `
-    <table class="summary-table" style="margin-bottom:24px">
+  let html = `
+    <h3>Buy Bucket Summary</h3>
+    <table class="summary-table">
       <thead>
         <tr>
           <th>Buy Bucket</th>
@@ -166,24 +172,23 @@ export function renderDemandReport(data) {
       <tbody>
   `;
 
-  ["Urgent", "Medium", "Low"].forEach(bucket => {
-    summaryHTML += `
+  ["Urgent","Medium","Low"].forEach(b => {
+    html += `
       <tr>
-        <td><b>${bucket}</b></td>
-        <td>${bucketSummary[bucket].styles.size}</td>
-        <td>${bucketSummary[bucket].skus}</td>
-        <td><b>${bucketSummary[bucket].demand}</b></td>
+        <td><b>${b}</b></td>
+        <td>${bucketSummary[b].styles.size}</td>
+        <td>${bucketSummary[b].skus}</td>
+        <td>${bucketSummary[b].demand}</td>
       </tr>
     `;
   });
 
-  summaryHTML += `</tbody></table>`;
+  html += `</tbody></table><br/>`;
 
   // ===============================
-  // RENDER MAIN TABLE
+  // MAIN DEMAND TABLE
   // ===============================
-  let html = `
-    ${summaryHTML}
+  html += `
     <table class="summary-table">
       <thead>
         <tr>
@@ -204,8 +209,6 @@ export function renderDemandReport(data) {
   `;
 
   rows.forEach((r, idx) => {
-    const bucket = getBucket(r.sc);
-
     html += `
       <tr class="style-row" data-style="${r.style}">
         <td class="toggle">+</td>
@@ -218,9 +221,7 @@ export function renderDemandReport(data) {
         <td>${r.drr.toFixed(2)}</td>
         <td>${r.sc.toFixed(1)}</td>
         <td><b>${r.direct}</b></td>
-        <td style="color:${bucket.color};font-weight:700">
-          ${bucket.label}
-        </td>
+        <td><b>${r.bucket}</b></td>
       </tr>
     `;
 
@@ -230,18 +231,14 @@ export function renderDemandReport(data) {
 
     skus.forEach(sku => {
       const skuSale = skuSales[r.style][sku];
-      const skuFCStock = (skuFC[r.style] || {})[sku] || 0;
       const skuSellerStock = (skuSeller[r.style] || {})[sku] || 0;
-      const skuTotal = skuFCStock + skuSellerStock;
+      const skuFCStock = (skuFC[r.style] || {})[sku] || 0;
 
       const skuDRR = skuSale / totalSaleDays;
       const skuSC = skuDRR ? skuSellerStock / skuDRR : 0;
-      const skuDirect = Math.max(
-        0,
-        Math.round(skuDRR * 45 - skuSellerStock)
-      );
+      const skuDemand = Math.max(0, Math.round(skuDRR * 45 - skuSellerStock));
 
-      const skuBucket = getBucket(skuSC);
+      if (skuDemand === 0) return;
 
       html += `
         <tr class="size-row" data-parent="${r.style}" style="display:none">
@@ -251,13 +248,11 @@ export function renderDemandReport(data) {
           <td>${skuSale}</td>
           <td>${skuFCStock}</td>
           <td>${skuSellerStock}</td>
-          <td>${skuTotal}</td>
+          <td>${skuFCStock + skuSellerStock}</td>
           <td>${skuDRR.toFixed(2)}</td>
           <td>${skuSC.toFixed(1)}</td>
-          <td>${skuDirect}</td>
-          <td style="color:${skuBucket.color};font-weight:600">
-            ${skuBucket.label}
-          </td>
+          <td>${skuDemand}</td>
+          <td>${getBucket(skuSC)}</td>
         </tr>
       `;
     });
@@ -267,7 +262,7 @@ export function renderDemandReport(data) {
   container.innerHTML = html;
 
   // ===============================
-  // EXPAND / COLLAPSE
+  // EXPAND / COLLAPSE (SAFE)
   // ===============================
   container.querySelectorAll(".style-row").forEach(row => {
     row.addEventListener("click", () => {
@@ -276,7 +271,7 @@ export function renderDemandReport(data) {
       row.querySelector(".toggle").textContent = expanded ? "−" : "+";
 
       container
-        .querySelectorAll(\`.size-row[data-parent="\${style}"]\`)
+        .querySelectorAll(`.size-row[data-parent="${style}"]`)
         .forEach(r => {
           r.style.display = expanded ? "table-row" : "none";
         });
