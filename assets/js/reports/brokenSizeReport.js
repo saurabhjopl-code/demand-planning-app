@@ -87,7 +87,7 @@ export function renderBrokenSizeReport(data) {
     if (brokenCount === 0) return;
 
     const totalSale = saleMap[style] || 0;
-    if (totalSale <= 200) return;
+    if (totalSale <= 100) return;
 
     let remark = "";
     let color = "";
