@@ -1,5 +1,8 @@
 // ===================================================
-// Demand Report – FINAL (V3.1.3 SAFE + COLOR ONLY)
+// Demand Report – FINAL (V3.2.3)
+// - Buy Bucket Summary + Grand Total
+// - Main Demand Table unchanged
+// - Seller-stock based SC
 // ===================================================
 
 export function renderDemandReport(data) {
@@ -23,7 +26,7 @@ export function renderDemandReport(data) {
   }
 
   // ===============================
-  // BUY BUCKET COLOR MAP (ONLY UI)
+  // BUY BUCKET COLORS
   // ===============================
   const BUCKET_COLOR = {
     Urgent: "#dc2626",
@@ -157,8 +160,18 @@ export function renderDemandReport(data) {
   });
 
   // ===============================
-  // BUY BUCKET SUMMARY TABLE (RESTORED)
+  // BUY BUCKET SUMMARY TABLE
   // ===============================
+  const totalStyles = new Set();
+  let totalSkus = 0;
+  let totalDemand = 0;
+
+  ["Urgent","Medium","Low"].forEach(b => {
+    bucketSummary[b].styles.forEach(s => totalStyles.add(s));
+    totalSkus += bucketSummary[b].skus;
+    totalDemand += bucketSummary[b].demand;
+  });
+
   let html = `
     <h3>Buy Bucket Summary</h3>
     <table class="summary-table">
@@ -184,7 +197,17 @@ export function renderDemandReport(data) {
     `;
   });
 
-  html += `</tbody></table><br/>`;
+  html += `
+    <tr style="font-weight:700;background:#f8fafc">
+      <td>Grand Total</td>
+      <td>${totalStyles.size}</td>
+      <td>${totalSkus}</td>
+      <td>${totalDemand}</td>
+    </tr>
+  </tbody>
+</table>
+<br/>
+  `;
 
   // ===============================
   // MAIN DEMAND TABLE (UNCHANGED)
@@ -268,7 +291,7 @@ export function renderDemandReport(data) {
   container.innerHTML = html;
 
   // ===============================
-  // EXPAND / COLLAPSE (SAFE)
+  // EXPAND / COLLAPSE
   // ===============================
   container.querySelectorAll(".style-row").forEach(row => {
     row.addEventListener("click", () => {
