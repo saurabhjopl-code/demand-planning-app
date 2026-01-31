@@ -1,5 +1,5 @@
 // ===================================================
-// Summary 6: Category-wise Sale (FINAL)
+// Summary 6: Category-wise Sale (FINAL + GRAND TOTAL)
 // Table:
 // Category | Total Units Sold | DRR | Total Stock | SC
 //
@@ -55,9 +55,12 @@ export function renderSummaryCategory(data) {
   });
 
   // -------------------------------
-  // Build Rows
+  // Build Rows + Grand Totals
   // -------------------------------
   const rows = [];
+
+  let grandSale = 0;
+  let grandStock = 0;
 
   Object.keys(categorySaleMap).forEach(category => {
     const totalUnitsSold = categorySaleMap[category];
@@ -73,6 +76,9 @@ export function renderSummaryCategory(data) {
       sc = (totalStock / drr).toFixed(0);
     }
 
+    grandSale += totalUnitsSold;
+    grandStock += totalStock;
+
     rows.push({
       category,
       totalUnitsSold,
@@ -86,6 +92,19 @@ export function renderSummaryCategory(data) {
   // Sort by DRR High → Low
   // -------------------------------
   rows.sort((a, b) => b.drr - a.drr);
+
+  // -------------------------------
+  // Grand Total Calculations
+  // -------------------------------
+  const grandDRR =
+    totalSaleDays > 0 ? (grandSale / totalSaleDays).toFixed(2) : "0.00";
+
+  let grandSC = 0;
+  if (grandDRR === "0.00" && grandStock > 0) {
+    grandSC = "∞";
+  } else if (Number(grandDRR) > 0) {
+    grandSC = (grandStock / Number(grandDRR)).toFixed(0);
+  }
 
   // -------------------------------
   // Build Table HTML
@@ -117,8 +136,18 @@ export function renderSummaryCategory(data) {
     `;
   });
 
+  // -------------------------------
+  // Grand Total Row
+  // -------------------------------
   html += `
-      </tbody>
+      <tr style="font-weight:700;background:#f8fafc">
+        <td>Grand Total</td>
+        <td>${grandSale}</td>
+        <td>${grandDRR}</td>
+        <td>${grandStock}</td>
+        <td>${grandSC}</td>
+      </tr>
+    </tbody>
     </table>
   `;
 
