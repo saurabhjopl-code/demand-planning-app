@@ -1,5 +1,5 @@
 // ===================================================
-// Demand Report – FINAL (V3.1.3 SAFE)
+// Demand Report – FINAL (V3.1.3 SAFE + COLOR ONLY)
 // ===================================================
 
 export function renderDemandReport(data) {
@@ -23,7 +23,7 @@ export function renderDemandReport(data) {
   }
 
   // ===============================
-  // BUY BUCKET COLOR MAP
+  // BUY BUCKET COLOR MAP (ONLY UI)
   // ===============================
   const BUCKET_COLOR = {
     Urgent: "#dc2626",
@@ -96,9 +96,14 @@ export function renderDemandReport(data) {
   });
 
   // ===============================
-  // BUILD STYLE ROWS
+  // BUILD ROWS + BUCKET SUMMARY
   // ===============================
   const rows = [];
+  const bucketSummary = {
+    Urgent: { styles: new Set(), skus: 0, demand: 0 },
+    Medium: { styles: new Set(), skus: 0, demand: 0 },
+    Low: { styles: new Set(), skus: 0, demand: 0 }
+  };
 
   Object.keys(styleSales).forEach(style => {
     let directSum = 0;
@@ -111,7 +116,13 @@ export function renderDemandReport(data) {
       const skuSC = skuDRR ? sellerStock / skuDRR : 0;
       const skuDemand = Math.max(0, Math.round(skuDRR * 45 - sellerStock));
 
-      directSum += skuDemand;
+      if (skuDemand > 0) {
+        const bucket = getBucket(skuSC);
+        bucketSummary[bucket].styles.add(style);
+        bucketSummary[bucket].skus += 1;
+        bucketSummary[bucket].demand += skuDemand;
+        directSum += skuDemand;
+      }
     });
 
     if (directSum === 0) return;
@@ -146,9 +157,39 @@ export function renderDemandReport(data) {
   });
 
   // ===============================
-  // RENDER TABLE
+  // BUY BUCKET SUMMARY TABLE (RESTORED)
   // ===============================
   let html = `
+    <h3>Buy Bucket Summary</h3>
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>Buy Bucket</th>
+          <th># of Styles</th>
+          <th># of SKUs</th>
+          <th>Total Demand</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  ["Urgent","Medium","Low"].forEach(b => {
+    html += `
+      <tr>
+        <td style="color:${BUCKET_COLOR[b]};font-weight:700">${b}</td>
+        <td>${bucketSummary[b].styles.size}</td>
+        <td>${bucketSummary[b].skus}</td>
+        <td>${bucketSummary[b].demand}</td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table><br/>`;
+
+  // ===============================
+  // MAIN DEMAND TABLE (UNCHANGED)
+  // ===============================
+  html += `
     <table class="summary-table">
       <thead>
         <tr>
