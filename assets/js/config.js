@@ -1,5 +1,5 @@
 // ================================
-// Global Configuration (LOCKED + EXTENDED SAFELY)
+// Global Configuration (LOCKED + PRODUCTION EXTENDED)
 // ================================
 
 export const CONFIG = {
@@ -10,45 +10,34 @@ export const CONFIG = {
     STOCK: "Stock",
     STYLE_STATUS: "Style Status",
     SALE_DAYS: "Sale Days",
-    SIZE_COUNT: "Size Count" // ✅ ADDED (SAFE)
+    SIZE_COUNT: "Size Count",
+    PRODUCTION: "Production" // ✅ NEW
   },
 
   EXPECTED_HEADERS: {
     SALE: [
-      "Month",
-      "MP",
-      "Account",
-      "FC",
-      "MP SKU",
-      "Uniware SKU",
-      "Style ID",
-      "Size",
-      "Units"
+      "Month","MP","Account","FC",
+      "MP SKU","Uniware SKU","Style ID","Size","Units"
     ],
 
     STOCK: [
-      "FC",
-      "MP SKU",
-      "Uniware SKU",
-      "Style ID",
-      "Size",
-      "Units"
+      "FC","MP SKU","Uniware SKU","Style ID","Size","Units"
     ],
 
     STYLE_STATUS: [
-      "Style ID",
-      "Category",
-      "Company Remark"
+      "Style ID","Category","Company Remark"
     ],
 
     SALE_DAYS: [
-      "Month",
-      "Days"
+      "Month","Days"
     ],
 
     SIZE_COUNT: [
-      "Style ID",
-      "Size Count"
+      "Style ID","Size Count"
+    ],
+
+    PRODUCTION: [
+      "Uniware SKU","In Production"
     ]
   }
 };
